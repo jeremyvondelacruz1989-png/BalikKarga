@@ -8,3 +8,12 @@ next-env.d.ts
 prisma/*.db
 prisma/*.db-journal
 uploads/
+
+# design-taste-frontend checker output (the deal histories in .taste-skill stay tracked)
+shots/
+.taste-skill/chrome-*/
+.taste-skill/gate/
+.taste-skill/gate.json
+.taste-skill/build*.json
+.taste-skill/landing.html
+.taste-skill/cons.txt
