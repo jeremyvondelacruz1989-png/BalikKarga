@@ -58,6 +58,12 @@ Shippers pay a discounted backhaul rate, and truckers earn on kilometers they wo
 - **At delivery:** at least one photo of the signed DR/waybill or unloaded cargo is required, plus the receiver's name. On phones, the camera opens directly.
 - Only the shipper, the trucker and admins can see the photos.
 
+### Landing page
+The public home page (`src/app/page.tsx`, styles in `src/components/landing/`) was designed with the
+`design-taste-frontend` skill. It shows BalikKarga's own screens as live HTML: the hero's matching window and
+the open return trips board read the real database. The one scroll moment (`iris-opens`) loads from
+`public/assets/moments`. Every rule is scoped under `.lp`, so the app's other pages are unaffected.
+
 ### Also included
 - **Notifications inbox.** All events go through `src/lib/notify.ts`, which sends the SMS too.
 
@@ -72,7 +78,7 @@ Each eligible pair gets a 0–100 score:
 - penalised by detour, unused capacity, budget below the asking rate, and extra RoRo crossings
 - the **suggested backhaul rate** is 60% of an estimated regular rate (per-km by truck class, with a minimum fare), plus the RoRo fee in full when the cargo crosses water
 
-Distances are estimated road km between 68 PH logistics hubs. Rates in `src/lib/constants.ts` are placeholders, so tune them with real lane data.
+Distances are estimated road km between 66 PH logistics hubs in all 18 regions. Rates in `src/lib/constants.ts` are placeholders, so tune them with real lane data.
 
 ## Try it in your browser (no install)
 

@@ -1,0 +1,267 @@
+/*
+  Landing page only (src/app/page.tsx). Built with the design-taste-frontend skill; every rule is
+  scoped under .lp so the app's own pages are untouched. Tokens: start.mjs brand with the app's own
+  colours (bg #f8fafc, ink #16202c, accent #d9540c) and the dealt Funnel pairing.
+*/
+html:has(.lp) {
+  overflow-x: clip;
+}
+
+.lp {
+  --p-bg: #f8fafc;
+  --p-surface: #eef2f6;
+  --p-ink: #16202c;
+  --p-muted: #5b636d;
+  --p-accent: #d9540c;
+  --p-action: #b4410b; /* the accent stepped darker so its white label passes 4.5:1 */
+  --p-line: color-mix(in oklab, var(--p-ink) 13%, transparent);
+  --accent: var(--p-accent);
+  --r-lg: 20px;
+  --r-md: 12px;
+  --r-sm: 8px;
+  --hdr: 61px; /* the app's header (layout.tsx) */
+  --padt: clamp(64px, 12svh, 112px); /* 112 at 900 tall, less on short laptop screens */
+  --padb: clamp(40px, 7svh, 72px);
+
+  width: 100vw;
+  margin: -2rem 0 -2rem calc(50% - 50vw);
+  background: var(--p-bg);
+  color: var(--p-ink);
+  font-family: var(--font-lp-text), system-ui, sans-serif;
+}
+@media (min-width: 640px) and (max-width: 1023px) {
+  .lp {
+    --padt: 88px;
+    --padb: 56px;
+  }
+}
+@media (max-width: 639px) {
+  .lp {
+    --padt: 72px;
+    --padb: 48px;
+  }
+}
+
+.lp-display {
+  font-family: var(--font-lp-display), system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: -0.03em;
+}
+.lp-mono {
+  font-family: var(--font-lp-mono), ui-monospace, monospace;
+}
+.lp-muted {
+  color: var(--p-muted);
+}
+/* Text people read: 7:1 or more on every ground of the page. */
+.lp-body {
+  color: #3c4450;
+}
+/* A heading's grey second sentence (large text, 3:1 or more). */
+.lp-h-muted {
+  color: #6b7380;
+}
+
+/* One section per screen: the hero fills what the app header leaves, every other section one screen. */
+.lp-hero {
+  min-height: calc(100svh - var(--hdr));
+}
+.lp-section {
+  min-height: 100svh;
+  padding: var(--padt) 0 var(--padb);
+}
+.lp-wrap {
+  width: min(100% - 2rem, 70rem); /* the app header's content box: max-w-6xl (72rem) less px-4 */
+  margin-inline: auto;
+}
+.lp-surface {
+  background: var(--p-surface);
+}
+
+.lp h2 {
+  font-family: var(--font-lp-display), system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  font-size: clamp(30px, 2.6vw + 16px, 48px);
+  line-height: 1.08;
+  max-width: 24ch;
+  text-wrap: balance;
+}
+
+/* Buttons (dealt: tonal): one filled primary, a tinted secondary. They step on hover and press on click. */
+.lp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 24px;
+  border-radius: var(--r-sm);
+  font-size: 16px;
+  font-weight: 500;
+  transition: transform 160ms cubic-bezier(.2, .7, .2, 1), background-color 160ms;
+}
+.lp-btn:hover {
+  transform: translateY(-1px);
+}
+.lp-btn:active {
+  transform: translateY(1px) scale(0.98);
+}
+.lp-btn--primary {
+  background: var(--p-action);
+  color: #fff;
+}
+.lp-btn--primary:hover {
+  background: color-mix(in oklab, var(--p-action) 88%, #000);
+}
+.lp-btn--secondary {
+  background: color-mix(in oklab, var(--p-ink) 8%, var(--p-bg));
+  color: var(--p-ink);
+}
+.lp-btn--secondary:hover {
+  background: color-mix(in oklab, var(--p-ink) 14%, var(--p-bg));
+}
+.lp-btn--xl {
+  min-height: 64px;
+  padding: 0 40px;
+  font-size: 20px;
+}
+.lp-btn .lp-arrow {
+  transition: transform 160ms;
+}
+.lp-btn:hover .lp-arrow {
+  transform: translateX(3px);
+}
+.lp-link {
+  font-weight: 500;
+  color: var(--p-ink);
+  background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat;
+  transition: background-size 200ms;
+}
+.lp-link:hover {
+  background-size: 100% 1px;
+}
+.lp :focus-visible {
+  outline: 2px solid var(--p-action);
+  outline-offset: 2px;
+}
+
+/* Cards: one recipe. A linked card lifts 2px. */
+.lp-card {
+  background: #fff;
+  border: 1px solid var(--p-line);
+  border-radius: var(--r-lg);
+}
+a.lp-card {
+  transition: transform 180ms cubic-bezier(.2, .7, .2, 1), border-color 180ms;
+}
+a.lp-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in oklab, var(--p-ink) 24%, transparent);
+}
+
+/* Product UI as live HTML: 13px text, 12px meta, one radius, a 1px line. */
+.lp-ui {
+  background: #fff;
+  border: 1px solid var(--p-line);
+  border-radius: var(--r-md);
+  font-size: 13px;
+  line-height: 1.45;
+  box-shadow: 0 1px 2px rgb(22 32 44 / 0.04), 0 8px 24px -12px rgb(22 32 44 / 0.18);
+}
+.lp-ui__meta {
+  font-size: 12px;
+  color: var(--p-muted);
+}
+.lp-score {
+  display: flex;
+  height: 40px;
+  width: 40px;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 2px solid currentColor;
+  font-weight: 500;
+  line-height: 1;
+}
+
+/* The hero's lit frame: the window rises out of it and fades over its last 18%. */
+.lp-frame {
+  position: relative;
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  background:
+    radial-gradient(80% 120% at 50% 0%, color-mix(in oklab, var(--p-accent) 18%, var(--p-bg)) 0%, transparent 70%),
+    var(--p-surface);
+  -webkit-mask-image: linear-gradient(#000 82%, transparent);
+  mask-image: linear-gradient(#000 82%, transparent);
+  overflow: hidden;
+}
+
+/* The hero enters once on load. */
+@keyframes lp-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+.lp [data-enter] > * {
+  animation: lp-enter 700ms cubic-bezier(.2, .7, .2, 1) both;
+}
+.lp [data-enter] > :nth-child(2) { animation-delay: 60ms; }
+.lp [data-enter] > :nth-child(3) { animation-delay: 120ms; }
+.lp [data-enter] > :nth-child(4) { animation-delay: 180ms; }
+.lp [data-enter] > :nth-child(5) { animation-delay: 260ms; }
+
+/* The window's loop: matched trucks arrive about 0.9 s apart, hold, play twice, then rest in place. */
+@keyframes lp-arrive {
+  0%, 6% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  16%, 100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+.lp-arrive {
+  animation: lp-arrive 4.8s cubic-bezier(.2, .7, .2, 1) 2 both;
+}
+.lp-arrive:nth-child(2) { animation-delay: 0.45s; }
+.lp-arrive:nth-child(3) { animation-delay: 0.9s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lp [data-enter] > *,
+  .lp-arrive {
+    animation: none;
+  }
+  .lp-btn,
+  a.lp-card,
+  .lp-link {
+    transition: none;
+  }
+  .lp-btn:hover,
+  a.lp-card:hover {
+    transform: none;
+  }
+}
+@media (max-width: 639px) {
+  .lp-arrive {
+    animation: none;
+  }
+}
+
+/* Phones: a section whose stacked content runs past one screen takes exactly two. */
+@media (max-width: 639px) {
+  .lp-section--2m {
+    min-height: 200svh;
+  }
+}
+
+/* Upright tablets: the four steps stack two by two and take two screens. */
+@media (min-width: 640px) and (max-width: 1023px) {
+  #how {
+    min-height: 200svh;
+  }
+}

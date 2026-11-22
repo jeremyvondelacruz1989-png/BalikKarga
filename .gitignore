@@ -13,3 +13,5 @@ e2e.db-journal
 uploads-e2e/
 test-results/
 playwright-report/
+.taste-skill/
+shots/

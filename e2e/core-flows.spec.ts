@@ -5,10 +5,21 @@ import { fixture, formError, loginAs, openBooking, resetDb } from "./helpers";
 test.describe.serial("core marketplace flows", () => {
   test.beforeAll(() => resetDb());
 
-  test("public landing page shows open return trips", async ({ page }) => {
+  test("public landing page shows live return trips and the matching window", async ({ page }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (e) => errors.push(e.message));
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Don't drive home empty." })).toBeVisible();
-    await expect(page.getByText("Trucks heading home soon")).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Backhaul loads for Philippine trucks" })).toBeVisible();
+    await expect(page.getByText("Trucks already heading this way")).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Return trips open this week/ })).toBeVisible();
+    await expect(page.getByText(/\d+ return trips and \d+ loads are open right now/)).toBeVisible();
+    // The sign-up buttons lead to the right role
+    await expect(page.getByRole("link", { name: "Post a load" }).first()).toHaveAttribute("href", "/signup?role=SHIPPER");
+    await expect(page.getByRole("link", { name: "Post a return trip" }).first()).toHaveAttribute("href", "/signup?role=TRUCKER");
+    // The scroll moment loads from public/assets and mounts on the verification section
+    await page.locator("#trust").scrollIntoViewIfNeeded();
+    await expect(page.locator("#trust")).toHaveAttribute("data-moment-mounted", "1");
+    expect(errors).toEqual([]);
   });
 
   test("trucker accepts a request, picks up and delivers with proof", async ({ browser }) => {
