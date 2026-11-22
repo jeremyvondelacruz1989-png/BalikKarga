@@ -1,4 +1,5 @@
 import "server-only";
+import { CITIES } from "./geo";
 import { BOOKING_FEE_MIN, BOOKING_FEE_RATE, KG_CO2_PER_KM, SIGNUP_BONUS, TRUCK_TYPES } from "./constants";
 import { fmtDate } from "./format";
 
@@ -283,7 +284,7 @@ export function renderLanding(data: LandingData): string {
         <h1 id="hero-h">Backhaul loads for trucks driving home empty</h1>
         <p class="hero__lead">Truckers post the empty return leg. Shippers book a truck already heading their way and pay a backhaul rate, about 40% under a regular trip.</p>
         <div class="btn-row"><a class="btn btn--primary" href="/signup?role=SHIPPER">Post a load${arrow}</a><a class="btn btn--secondary" href="/signup?role=TRUCKER">Post a return trip</a></div>
-        <p class="hero__proof">Matches loads between 68 hubs, from Laoag to Tagum.</p>
+        <p class="hero__proof">Matches loads between ${CITIES.length} hubs, from Laoag to Tagum.</p>
       </div>
       <div class="hero__art span-6 start-7" data-fx="gradient-mesh" data-fx-seed="41" role="img" aria-label="BalikKarga's list of open return trips, and a truck matched to a load from Tarlac City to Laoag">
         <div class="ly-piece ly-piece--main" aria-hidden="true">
@@ -533,8 +534,8 @@ export function renderLanding(data: LandingData): string {
     <div class="wrap">
       <div class="grid">
         <div class="span-5 stack-4">
-          <h2 id="lanes-h">Lanes across 68 hubs, RoRo included</h2>
-          <p>Distances are road kilometres between 68 logistics hubs. When cargo crosses water, the suggested rate adds the RoRo fee in full.</p>
+          <h2 id="lanes-h">Lanes across ${CITIES.length} hubs, RoRo included</h2>
+          <p>Distances are road kilometres between ${CITIES.length} logistics hubs. When cargo crosses water, the suggested rate adds the RoRo fee in full.</p>
           <ul class="checks">
             <li>Cold chain cargo goes only in a reefer van</li>
             <li>A 6-wheeler load can ride in a wing van</li>
