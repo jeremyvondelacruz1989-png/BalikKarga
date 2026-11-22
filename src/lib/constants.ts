@@ -45,6 +45,11 @@ export const BOOKING_FEE_RATE = 0.05;
 export const BOOKING_FEE_MIN = 150;
 export const TOPUP_MIN = 200;
 export const TOPUP_PACKAGES = [500, 1000, 2500, 5000];
+/**
+ * Welcome credits for new truckers, to get them to sign up and try their first booking.
+ * One bonus per mobile number. Set SIGNUP_BONUS=0 in .env to turn the promo off.
+ */
+export const SIGNUP_BONUS = Number(process.env.SIGNUP_BONUS ?? 300) || 0;
 
 export function bookingFee(agreedRate: number): number {
   return Math.max(BOOKING_FEE_MIN, Math.round(agreedRate * BOOKING_FEE_RATE));

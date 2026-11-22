@@ -18,6 +18,7 @@ const TYPE_LABEL: Record<string, string> = {
   BOOKING_FEE: "Booking fee",
   REFUND: "Refund",
   ADJUSTMENT: "Adjustment",
+  SIGNUP_BONUS: "Welcome bonus",
 };
 
 export default async function CreditsPage() {

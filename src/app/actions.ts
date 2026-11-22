@@ -10,6 +10,7 @@ import {
   CARGO_TYPE_KEYS,
   DOC_TYPES,
   PAYMENT_METHODS,
+  SIGNUP_BONUS,
   TOPUP_MIN,
   TRUCK_TYPE_KEYS,
   TRUCK_TYPES,
@@ -21,6 +22,7 @@ import { parseManilaDate } from "@/lib/format";
 import { checkTransition, nextStatus, type BookingAction } from "@/lib/booking-rules";
 import { scoreMatch } from "@/lib/matching";
 import { notify } from "@/lib/notify";
+import { normalizePhone } from "@/lib/sms";
 
 export type FormState = { error?: string; ok?: string } | undefined;
 
@@ -55,10 +57,35 @@ const signupSchema = z.object({
 export async function signup(_: FormState, formData: FormData): Promise<FormState> {
   const parsed = signupSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: firstError(parsed.error) };
-  const { password, ...data } = parsed.data;
+  const { password, ...rest } = parsed.data;
+  const data = { ...rest, phone: normalizePhone(rest.phone) ?? rest.phone };
   if (await db.user.findUnique({ where: { email: data.email } })) return { error: "That email is already registered" };
-  const user = await db.user.create({ data: { ...data, passwordHash: await hashPassword(password) } });
+  const passwordHash = await hashPassword(password);
+
+  // Welcome bonus for truckers: once per mobile number, recorded in the credit ledger.
+  const bonusTaken =
+    data.role !== "TRUCKER" || SIGNUP_BONUS <= 0
+      ? true
+      : !!(await db.creditTransaction.findFirst({ where: { type: "SIGNUP_BONUS", reference: data.phone } }));
+  const user = await db.$transaction(async (tx) => {
+    const u = await tx.user.create({
+      data: { ...data, passwordHash, creditBalance: bonusTaken ? 0 : SIGNUP_BONUS },
+    });
+    if (!bonusTaken)
+      await tx.creditTransaction.create({
+        data: { userId: u.id, type: "SIGNUP_BONUS", amount: SIGNUP_BONUS, reference: data.phone, note: "Welcome bonus" },
+      });
+    return u;
+  });
   await createSession(user.id);
+  if (data.role === "TRUCKER")
+    await notify(
+      user.id,
+      bonusTaken
+        ? "Welcome to BalikKarga! Add your truck and post your first return trip."
+        : `Welcome to BalikKarga! ₱${SIGNUP_BONUS} free credits are in your account. Add your truck and post your first return trip.`,
+      "/trucks",
+    );
   const admins = await db.user.findMany({ where: { role: "ADMIN" }, select: { id: true } });
   await Promise.all(
     admins.map((a) => notify(a.id, `New ${data.role.toLowerCase()} sign-up: ${data.name} — verify their documents`, "/admin", { sms: false })),

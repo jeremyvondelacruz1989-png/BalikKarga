@@ -209,8 +209,9 @@ async function TruckerHome({ userId }: { userId: string }) {
 }
 
 async function AdminHome() {
-  const [fees, pendingTopups, pendingDocs, users, unverifiedUsers, unverifiedTrucks, openLoads, openTrips, delivered] = await Promise.all([
+  const [fees, bonuses, pendingTopups, pendingDocs, users, unverifiedUsers, unverifiedTrucks, openLoads, openTrips, delivered] = await Promise.all([
     db.creditTransaction.aggregate({ where: { status: "APPROVED", type: { in: ["BOOKING_FEE", "REFUND"] } }, _sum: { amount: true } }),
+    db.creditTransaction.aggregate({ where: { type: "SIGNUP_BONUS" }, _sum: { amount: true }, _count: true }),
     db.creditTransaction.count({ where: { type: "TOPUP", status: "PENDING" } }),
     db.verificationDocument.count({ where: { status: "PENDING" } }),
     db.user.count({ where: { role: { not: "ADMIN" } } }),
@@ -225,7 +226,11 @@ async function AdminHome() {
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-4">
-        <Stat label="Users" value={users} hint={`${unverifiedUsers} awaiting verification`} />
+        <Stat
+          label="Users"
+          value={users}
+          hint={`${unverifiedUsers} awaiting verification · ${bonuses._count} welcome bonuses (${php(bonuses._sum.amount ?? 0)})`}
+        />
         <Stat label="Open loads / trips" value={`${openLoads} / ${openTrips}`} />
         <Stat label="GMV delivered" value={php(gmv)} hint={`Booking fees earned: ${php(-(fees._sum.amount ?? 0))}`} />
         <Stat label="Empty km filled" value={km(filled)} hint={`≈ ${Math.round(filled * KG_CO2_PER_KM).toLocaleString()} kg CO₂ avoided`} />

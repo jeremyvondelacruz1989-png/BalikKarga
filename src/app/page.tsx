@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { km } from "@/lib/format";
-import { KG_CO2_PER_KM } from "@/lib/constants";
+import { KG_CO2_PER_KM, SIGNUP_BONUS } from "@/lib/constants";
 import { Route } from "@/components/ui";
 
 export default async function Home() {
@@ -38,6 +38,11 @@ export default async function Home() {
               I have an empty return trip
             </Link>
           </div>
+          {SIGNUP_BONUS > 0 && (
+            <p className="mt-4 inline-flex items-center gap-2 rounded-md border border-brand-100 bg-brand-50 px-3 py-2 text-sm text-brand-700">
+              🎁 Truckers: sign up and get <b>₱{SIGNUP_BONUS} free credits</b>, enough for your first booking fees.
+            </p>
+          )}
         </div>
         <div className="card p-5">
           <div className="mb-3 flex items-center justify-between">

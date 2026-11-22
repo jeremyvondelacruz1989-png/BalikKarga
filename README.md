@@ -22,6 +22,9 @@ Shippers pay a discounted backhaul rate, and truckers earn on kilometers they wo
   - a trucker can't send an offer or accept a request
   - if a shipper tries to accept an offer, the trucker is told to top up
 - **Refunds:** if the shipper cancels an accepted booking, the fee is refunded. If the trucker cancels, the fee is kept.
+- **Welcome bonus:** new truckers get **₱300 free credits** when they sign up, enough to cover their first booking fees.
+  - One bonus per mobile number: `0917…` and `+63917…` count as the same number.
+  - Change the amount, or set it to 0 to turn the promo off, with `SIGNUP_BONUS` in `.env`.
 - Every change is recorded in a ledger shown on the trucker's **Credits** page.
 
 ### Verification documents
@@ -97,6 +100,7 @@ npm run typecheck
 | `UPLOAD_DIR` | Where uploaded files are stored (default `./uploads`) |
 | `SEMAPHORE_API_KEY`, `SEMAPHORE_SENDER_NAME` | Turn on real SMS. Get a key at semaphore.co. The sender name must be approved by Semaphore. |
 | `APP_URL` | Your public URL, used in SMS links |
+| `SIGNUP_BONUS` | Welcome credits for new truckers (default 300; 0 = off) |
 | `NEXT_PUBLIC_PAY_GCASH`, `NEXT_PUBLIC_PAY_MAYA`, `NEXT_PUBLIC_PAY_BANK` | The accounts truckers pay into for top-ups, shown on the Credits page |
 
 ## Deploy (Vercel + Supabase), about 15 minutes

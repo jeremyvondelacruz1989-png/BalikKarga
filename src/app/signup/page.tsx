@@ -1,6 +1,7 @@
 import { ActionForm, SubmitButton } from "@/components/ActionForm";
 import { CitySelect } from "@/components/ui";
 import { signup } from "../actions";
+import { SIGNUP_BONUS } from "@/lib/constants";
 
 export default async function SignupPage({ searchParams }: { searchParams: Promise<{ role?: string }> }) {
   const { role } = await searchParams;
@@ -13,7 +14,11 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
           <div className="mt-2 grid grid-cols-2 gap-2">
             {[
               ["SHIPPER", "Shipper", "I have cargo to move"],
-              ["TRUCKER", "Trucker / operator", "I have trucks returning empty"],
+              [
+                "TRUCKER",
+                "Trucker / operator",
+                SIGNUP_BONUS > 0 ? `Trucks returning empty · get ₱${SIGNUP_BONUS} free credits` : "I have trucks returning empty",
+              ],
             ].map(([v, t, d]) => (
               <label
                 key={v}
