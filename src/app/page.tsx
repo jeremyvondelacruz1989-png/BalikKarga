@@ -39,7 +39,7 @@ export default async function Home() {
             </Link>
           </div>
           {SIGNUP_BONUS > 0 && (
-            <p className="mt-4 inline-flex items-center gap-2 rounded-md border border-brand-100 bg-brand-50 px-3 py-2 text-sm text-brand-700">
+            <p className="mt-4 rounded-md border border-brand-100 bg-brand-50 px-3 py-2 text-sm text-brand-700">
               🎁 Truckers: get <b>₱{SIGNUP_BONUS} free credits</b> once your documents are verified, enough for your first booking fees.
             </p>
           )}
