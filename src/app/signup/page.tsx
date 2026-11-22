@@ -17,7 +17,7 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
               [
                 "TRUCKER",
                 "Trucker / operator",
-                SIGNUP_BONUS > 0 ? `Trucks returning empty · get ₱${SIGNUP_BONUS} free credits` : "I have trucks returning empty",
+                SIGNUP_BONUS > 0 ? `Trucks returning empty · ₱${SIGNUP_BONUS} free credits once verified` : "I have trucks returning empty",
               ],
             ].map(([v, t, d]) => (
               <label

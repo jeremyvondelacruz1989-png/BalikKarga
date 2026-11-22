@@ -23,6 +23,7 @@ import { checkTransition, nextStatus, type BookingAction } from "@/lib/booking-r
 import { scoreMatch } from "@/lib/matching";
 import { notify } from "@/lib/notify";
 import { normalizePhone } from "@/lib/sms";
+import { releaseSignupBonusIfEligible } from "@/lib/bonus";
 
 export type FormState = { error?: string; ok?: string } | undefined;
 
@@ -62,18 +63,26 @@ export async function signup(_: FormState, formData: FormData): Promise<FormStat
   if (await db.user.findUnique({ where: { email: data.email } })) return { error: "That email is already registered" };
   const passwordHash = await hashPassword(password);
 
-  // Welcome bonus for truckers: once per mobile number, recorded in the credit ledger.
+  // Welcome bonus for truckers: reserved now (once per mobile number) and credited
+  // when their verification documents are approved (see src/lib/bonus.ts).
   const bonusTaken =
     data.role !== "TRUCKER" || SIGNUP_BONUS <= 0
       ? true
       : !!(await db.creditTransaction.findFirst({ where: { type: "SIGNUP_BONUS", reference: data.phone } }));
   const user = await db.$transaction(async (tx) => {
     const u = await tx.user.create({
-      data: { ...data, passwordHash, creditBalance: bonusTaken ? 0 : SIGNUP_BONUS },
+      data: { ...data, passwordHash },
     });
     if (!bonusTaken)
       await tx.creditTransaction.create({
-        data: { userId: u.id, type: "SIGNUP_BONUS", amount: SIGNUP_BONUS, reference: data.phone, note: "Welcome bonus" },
+        data: {
+          userId: u.id,
+          type: "SIGNUP_BONUS",
+          amount: SIGNUP_BONUS,
+          status: "PENDING",
+          reference: data.phone,
+          note: "Welcome bonus, credited once your documents are approved",
+        },
       });
     return u;
   });
@@ -83,8 +92,8 @@ export async function signup(_: FormState, formData: FormData): Promise<FormStat
       user.id,
       bonusTaken
         ? "Welcome to BalikKarga! Add your truck and post your first return trip."
-        : `Welcome to BalikKarga! ₱${SIGNUP_BONUS} free credits are in your account. Add your truck and post your first return trip.`,
-      "/trucks",
+        : `Welcome to BalikKarga! Upload your ID, driver's license, OR/CR and LTFRB franchise to unlock ₱${SIGNUP_BONUS} free credits.`,
+      bonusTaken ? "/trucks" : "/verification",
     );
   const admins = await db.user.findMany({ where: { role: "ADMIN" }, select: { id: true } });
   await Promise.all(
@@ -566,11 +575,16 @@ export async function adminReviewDocument(decision: "approve" | "reject", formDa
   const label = (DOC_TYPES as Record<string, { label: string }>)[doc.docType]?.label ?? doc.docType;
   if (approve && doc.docType === "LTFRB_CPC" && doc.truckId)
     await db.truck.update({ where: { id: doc.truckId }, data: { franchiseVerified: true } });
-  await notify(
-    doc.userId,
-    approve ? `${label}${doc.truck ? ` for ${doc.truck.plateNumber}` : ""} approved.` : `${label} was not accepted${note ? `: ${note}` : ""}. Please upload a clearer copy.`,
-    "/verification",
-  );
+  // The last required approval releases the welcome bonus (it sends its own message).
+  const bonusReleased = approve && (await releaseSignupBonusIfEligible(doc.userId));
+  if (!bonusReleased)
+    await notify(
+      doc.userId,
+      approve
+        ? `${label}${doc.truck ? ` for ${doc.truck.plateNumber}` : ""} approved.`
+        : `${label} was not accepted${note ? `: ${note}` : ""}. Please upload a clearer copy.`,
+      "/verification",
+    );
   revalidatePath("/admin");
 }
 

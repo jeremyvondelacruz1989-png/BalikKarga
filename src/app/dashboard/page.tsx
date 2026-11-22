@@ -128,7 +128,10 @@ async function ShipperHome({ userId }: { userId: string }) {
 
 async function TruckerHome({ userId }: { userId: string }) {
   const [me, trucks, openTrips, active, delivered] = await Promise.all([
-    db.user.findUniqueOrThrow({ where: { id: userId }, select: { creditBalance: true } }),
+    db.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { creditBalance: true, creditTxns: { where: { type: "SIGNUP_BONUS", status: "PENDING" }, select: { amount: true } } },
+    }),
     db.truck.count({ where: { ownerId: userId } }),
     db.returnTrip.findMany({ where: { truckerId: userId, status: "OPEN" }, include: { truck: true }, orderBy: { availableFrom: "asc" } }),
     db.booking.count({ where: { truckerId: userId, status: { in: ["PENDING", "ACCEPTED", "IN_TRANSIT"] } } }),
@@ -149,7 +152,13 @@ async function TruckerHome({ userId }: { userId: string }) {
     <>
       <div className="grid gap-4 sm:grid-cols-4">
         <Link href="/credits" className="block">
-          <Stat label="Credits" value={php(me.creditBalance)} hint={me.creditBalance < 150 ? "Top up to accept bookings →" : "Top up →"} />
+          <Stat label="Credits" value={php(me.creditBalance)} hint={
+              me.creditTxns[0]
+                ? `₱${me.creditTxns[0].amount} bonus unlocks when verified →`
+                : me.creditBalance < 150
+                  ? "Top up to accept bookings →"
+                  : "Top up →"
+            } />
         </Link>
         <Stat label="Open return trips" value={openTrips.length} />
         <Stat label="Active bookings" value={active} />
@@ -211,7 +220,7 @@ async function TruckerHome({ userId }: { userId: string }) {
 async function AdminHome() {
   const [fees, bonuses, pendingTopups, pendingDocs, users, unverifiedUsers, unverifiedTrucks, openLoads, openTrips, delivered] = await Promise.all([
     db.creditTransaction.aggregate({ where: { status: "APPROVED", type: { in: ["BOOKING_FEE", "REFUND"] } }, _sum: { amount: true } }),
-    db.creditTransaction.aggregate({ where: { type: "SIGNUP_BONUS" }, _sum: { amount: true }, _count: true }),
+    db.creditTransaction.aggregate({ where: { type: "SIGNUP_BONUS", status: "APPROVED" }, _sum: { amount: true }, _count: true }),
     db.creditTransaction.count({ where: { type: "TOPUP", status: "PENDING" } }),
     db.verificationDocument.count({ where: { status: "PENDING" } }),
     db.user.count({ where: { role: { not: "ADMIN" } } }),
@@ -229,7 +238,7 @@ async function AdminHome() {
         <Stat
           label="Users"
           value={users}
-          hint={`${unverifiedUsers} awaiting verification · ${bonuses._count} welcome bonuses (${php(bonuses._sum.amount ?? 0)})`}
+          hint={`${unverifiedUsers} awaiting verification · ${bonuses._count} welcome bonuses paid (${php(bonuses._sum.amount ?? 0)})`}
         />
         <Stat label="Open loads / trips" value={`${openLoads} / ${openTrips}`} />
         <Stat label="GMV delivered" value={php(gmv)} hint={`Booking fees earned: ${php(-(fees._sum.amount ?? 0))}`} />

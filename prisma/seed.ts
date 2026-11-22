@@ -145,6 +145,10 @@ async function main() {
   await db.creditTransaction.create({
     data: { userId: bisaya.id, type: "BOOKING_FEE", amount: -bookingFee(16000), bookingId: accepted.id, note: "Booking fee: Bohol-made furniture order" },
   });
+  // Ilocos Freight signed up recently: welcome bonus held until their documents are approved.
+  await db.creditTransaction.create({
+    data: { userId: ilocos.id, type: "SIGNUP_BONUS", amount: 300, status: "PENDING", reference: ilocos.phone, note: "Welcome bonus, credited once your documents are approved" },
+  });
   // Ilocos Freight has no credits yet but has a top-up waiting for admin review.
   await db.creditTransaction.create({ data: { userId: ilocos.id, type: "TOPUP", amount: 1000, method: "GCASH", reference: "1012 554 90021", status: "PENDING" } });
   for (const u of [ramon, bisaya, coldx, ilocos]) {

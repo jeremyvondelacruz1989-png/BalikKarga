@@ -12,6 +12,8 @@ import {
 import { ActionForm, SubmitButton } from "@/components/ActionForm";
 import { PageHeader, StatusBadge } from "@/components/ui";
 import { requestTopup } from "../actions";
+import { missingBonusDocs } from "@/lib/bonus";
+import Link from "next/link";
 
 const TYPE_LABEL: Record<string, string> = {
   TOPUP: "Top-up",
@@ -25,6 +27,13 @@ export default async function CreditsPage() {
   const user = await requireUser("TRUCKER");
   const txns = await db.creditTransaction.findMany({ where: { userId: user.id }, orderBy: { createdAt: "desc" }, take: 50 });
   const pending = txns.filter((t) => t.type === "TOPUP" && t.status === "PENDING").reduce((s, t) => s + t.amount, 0);
+  const heldBonus = txns.find((t) => t.type === "SIGNUP_BONUS" && t.status === "PENDING");
+  const missing = heldBonus
+    ? missingBonusDocs(
+        await db.verificationDocument.findMany({ where: { userId: user.id } }),
+        (await db.truck.findMany({ where: { ownerId: user.id }, select: { id: true } })).map((t) => t.id),
+      )
+    : [];
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
@@ -33,6 +42,22 @@ export default async function CreditsPage() {
           title="Credits"
           subtitle={`Credits pay the booking fee (${BOOKING_FEE_RATE * 100}% of the agreed rate, minimum ₱${BOOKING_FEE_MIN}) when a booking is accepted. Contact details are revealed after the fee is paid. 1 credit = ₱1.`}
         />
+        {heldBonus && (
+          <div className="card border-brand-100 bg-brand-50 p-5 text-sm">
+            <div className="font-semibold text-brand-700">
+              🎁 ₱{heldBonus.amount.toLocaleString()} welcome bonus waiting for you
+            </div>
+            <p className="mt-1 text-slate-700">It&apos;s credited as soon as these documents are approved:</p>
+            <ul className="mt-1 list-inside list-disc text-slate-700">
+              {missing.map((m) => (
+                <li key={m}>{m}</li>
+              ))}
+            </ul>
+            <Link href="/verification" className="btn-primary mt-3">
+              Upload documents
+            </Link>
+          </div>
+        )}
         <div className="card flex flex-wrap items-center gap-8 p-6">
           <div>
             <div className="text-xs font-medium uppercase tracking-wide text-slate-500">Available balance</div>
@@ -78,7 +103,7 @@ export default async function CreditsPage() {
                             {t.note ?? "Booking"}
                           </a>
                         )}
-                        {t.type === "TOPUP" && t.note && <div>{t.note}</div>}
+                        {(t.type === "TOPUP" || t.type === "SIGNUP_BONUS") && t.note && <div>{t.note}</div>}
                       </td>
                       <td className={`p-3 text-right font-semibold ${t.amount < 0 ? "text-red-700" : "text-emerald-700"}`}>
                         {t.amount > 0 ? "+" : "−"}

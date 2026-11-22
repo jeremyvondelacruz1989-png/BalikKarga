@@ -5,6 +5,7 @@ import { DOC_TYPES } from "@/lib/constants";
 import { ActionForm, SubmitButton } from "@/components/ActionForm";
 import { PageHeader, StatusBadge, VerifiedBadge } from "@/components/ui";
 import { uploadDocument } from "../actions";
+import { missingBonusDocs, pendingSignupBonus } from "@/lib/bonus";
 
 export default async function VerificationPage() {
   const user = await requireUser("SHIPPER", "TRUCKER");
@@ -12,6 +13,8 @@ export default async function VerificationPage() {
     db.verificationDocument.findMany({ where: { userId: user.id }, include: { truck: true }, orderBy: { createdAt: "desc" } }),
     user.role === "TRUCKER" ? db.truck.findMany({ where: { ownerId: user.id } }) : Promise.resolve([]),
   ]);
+  const heldBonus = user.role === "TRUCKER" ? await pendingSignupBonus(user.id) : null;
+  const missing = heldBonus ? missingBonusDocs(docs, trucks.map((t) => t.id)) : [];
   const applicable = Object.entries(DOC_TYPES).filter(
     ([, m]) => m.for === "ALL" || (user.role === "TRUCKER" && (m.for === "TRUCKER" || m.for === "TRUCK")),
   );
@@ -37,6 +40,12 @@ export default async function VerificationPage() {
           subtitle="Verified accounts get more bookings. Upload clear photos or PDFs; only our admins can see them."
           action={<VerifiedBadge verified={user.verified} />}
         />
+        {heldBonus && (
+          <div className="card border-brand-100 bg-brand-50 p-4 text-sm">
+            <b className="text-brand-700">🎁 Unlock your ₱{heldBonus.amount.toLocaleString()} welcome bonus.</b> Still needed (approved):{" "}
+            {missing.join(" · ")}. Business registration (DTI/SEC or BIR 2303) is optional for the bonus.
+          </div>
+        )}
         <section className="card divide-y divide-slate-100">
           {checklist.map((c) => (
             <div key={c.label} className="flex items-center justify-between p-3 text-sm">
