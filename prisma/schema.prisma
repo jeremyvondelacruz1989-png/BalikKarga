@@ -1,0 +1,152 @@
+// BalikKarga data model.
+// Local dev runs on SQLite. To go live, change provider to "postgresql" and set
+// DATABASE_URL to your Supabase/Neon connection string, then `npm run db:push`.
+// Enum-like columns are plain strings (validated in src/lib/constants.ts) so the
+// schema works unchanged on both SQLite and Postgres.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String // ADMIN | SHIPPER | TRUCKER
+  company      String?
+  phone        String?
+  city         String?
+  verified     Boolean  @default(false) // KYC checked by an admin
+  createdAt    DateTime @default(now())
+
+  sessions         Session[]
+  trucks           Truck[]
+  returnTrips      ReturnTrip[]
+  loads            Load[]
+  shipperBookings  Booking[]      @relation("ShipperBookings")
+  truckerBookings  Booking[]      @relation("TruckerBookings")
+  notifications    Notification[]
+}
+
+model Session {
+  id        String   @id // random token stored in the cookie (hashed)
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Truck {
+  id                String   @id @default(cuid())
+  ownerId           String
+  plateNumber       String   @unique
+  truckType         String // see TRUCK_TYPES
+  capacityTons      Float
+  homeCity          String
+  franchiseNo       String? // LTFRB CPC / case number
+  franchiseVerified Boolean  @default(false)
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now())
+
+  owner       User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  returnTrips ReturnTrip[]
+
+  @@index([ownerId])
+}
+
+// A trucker's empty return leg: "my truck will be empty in <originCity>
+// between these dates and is heading back to <destCity>".
+model ReturnTrip {
+  id            String   @id @default(cuid())
+  truckerId     String
+  truckId       String
+  originCity    String // where the truck becomes empty
+  destCity      String // home base / where it's heading
+  availableFrom DateTime
+  availableTo   DateTime
+  maxDetourKm   Int      @default(50)
+  askingRate    Float? // PHP for the whole backhaul, optional
+  status        String   @default("OPEN") // OPEN | BOOKED | COMPLETED | CANCELLED
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  trucker  User      @relation(fields: [truckerId], references: [id], onDelete: Cascade)
+  truck    Truck     @relation(fields: [truckId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+
+  @@index([status])
+  @@index([truckerId])
+}
+
+model Load {
+  id          String   @id @default(cuid())
+  shipperId   String
+  title       String // short cargo description
+  cargoType   String // see CARGO_TYPES
+  weightTons  Float
+  truckType   String? // required type, null = any
+  pickupCity  String
+  dropCity    String
+  pickupDate  DateTime // earliest pickup
+  deliverBy   DateTime
+  budget      Float? // PHP the shipper is willing to pay
+  status      String   @default("OPEN") // OPEN | MATCHED | IN_TRANSIT | DELIVERED | CANCELLED
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  shipper  User      @relation(fields: [shipperId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+
+  @@index([status])
+  @@index([shipperId])
+}
+
+model Booking {
+  id          String    @id @default(cuid())
+  loadId      String
+  tripId      String
+  shipperId   String
+  truckerId   String
+  initiatedBy String // SHIPPER (request) | TRUCKER (offer)
+  agreedRate  Float
+  status      String    @default("PENDING") // PENDING | ACCEPTED | DECLINED | IN_TRANSIT | DELIVERED | CANCELLED
+  message     String?
+  podNote     String? // proof-of-delivery note (receiver name, DR number)
+  pickedUpAt  DateTime?
+  deliveredAt DateTime?
+  rating      Int? // shipper's 1-5 rating of the trucker
+  loadedKm    Float? // estimated loaded distance, for "empty km avoided"
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  load    Load       @relation(fields: [loadId], references: [id], onDelete: Cascade)
+  trip    ReturnTrip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  shipper User       @relation("ShipperBookings", fields: [shipperId], references: [id], onDelete: Cascade)
+  trucker User       @relation("TruckerBookings", fields: [truckerId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([loadId])
+  @@index([tripId])
+}
+
+// In-app inbox. In production each row would also be sent by SMS/Viber.
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  message   String
+  href      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+}
