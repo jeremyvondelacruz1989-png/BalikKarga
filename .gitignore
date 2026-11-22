@@ -17,3 +17,8 @@ shots/
 .taste-skill/build*.json
 .taste-skill/landing.html
 .taste-skill/cons.txt
+e2e.db
+e2e.db-journal
+uploads-e2e/
+test-results/
+playwright-report/

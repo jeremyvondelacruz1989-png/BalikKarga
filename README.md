@@ -94,10 +94,24 @@ npm run dev        # http://localhost:3000
 Demo logins (password `demo1234`): `shipper@demo.ph`, `trucker@demo.ph`, `admin@demo.ph`.
 Other seeded accounts: `cebu.hardware@demo.ph`, `davao.coop@demo.ph`, `ricemill@demo.ph`, `bisaya@demo.ph`, `coldx@demo.ph`, `ilocos@demo.ph`.
 
+## Tests
+
 ```bash
-npm test           # matching, pricing and booking-rule unit tests
-npm run typecheck
+npm test              # unit tests: matching, pricing, fees, booking rules, bonus rules
+npm run typecheck     # TypeScript check
+npm run test:e2e      # browser tests of every user flow (about 1 minute)
+npm run test:all      # all three, in order. Run this before merging any change.
 ```
+
+The browser tests (`e2e/`) build the app and run it on port 3100 with **their own database** (`prisma/e2e.db`) and upload folder, so your demo data isn't touched. SMS always stay in test mode. They cover:
+- **core flows:** posting, matching, offers and requests, accept, pickup, delivery with photo, rating, sign-up, mobile layout
+- **access control:** log-in required, role-only pages, people can't open others' bookings, loads or files
+- **credits:** top-ups and admin approval, duplicate references, the 2.5% / ₱75 booking fee, refunds, contacts hidden until accepted
+- **documents and photos:** fake files rejected, admin review, franchise verification, private delivery photos
+- **alerts:** saved-lane alerts, SMS test log, SMS opt-out
+- **welcome bonus:** held until documents are approved, one per mobile number, truckers only
+
+**First time on a new machine or Codespace:** run `npm run test:e2e:setup` once to download the test browser.
 
 ## Settings (`.env`)
 
