@@ -3,7 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { fmtDate, fmtDateTime, km, php } from "@/lib/format";
 import { matchesForLoad, matchesForTrip } from "@/lib/queries";
-import { KG_CO2_PER_KM } from "@/lib/constants";
+import { BOOKING_FEE_MIN, KG_CO2_PER_KM } from "@/lib/constants";
 import { Empty, PageHeader, Route, ScoreRing, Stat, VerifiedBadge } from "@/components/ui";
 import { markNotificationsRead, toggleSms } from "../actions";
 
@@ -155,7 +155,7 @@ async function TruckerHome({ userId }: { userId: string }) {
           <Stat label="Credits" value={php(me.creditBalance)} hint={
               me.creditTxns[0]
                 ? `₱${me.creditTxns[0].amount} bonus unlocks when verified →`
-                : me.creditBalance < 150
+                : me.creditBalance < BOOKING_FEE_MIN
                   ? "Top up to accept bookings →"
                   : "Top up →"
             } />

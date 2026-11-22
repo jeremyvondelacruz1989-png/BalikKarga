@@ -42,7 +42,7 @@ export const BACKHAUL_DISCOUNT = 0.6; // suggested price = 60% of the regular ma
  * booking is accepted. Contact details are revealed only after the fee is paid.
  */
 export const BOOKING_FEE_RATE = 0.025;
-export const BOOKING_FEE_MIN = 150;
+export const BOOKING_FEE_MIN = 75;
 export const TOPUP_MIN = 200;
 export const TOPUP_PACKAGES = [500, 1000, 2500, 5000];
 /**

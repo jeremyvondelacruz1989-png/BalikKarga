@@ -17,7 +17,7 @@ Shippers pay a discounted backhaul rate, and truckers earn on kilometers they wo
 ### Trucker credits and booking fees
 - Truckers keep a prepaid **credit balance**, where 1 credit = ₱1.
 - **Top-up:** the trucker sends money by GCash, Maya or bank transfer, then submits the amount, the reference number and an optional receipt screenshot. An admin checks the payment and approves it, and the credits are added. Duplicate reference numbers are rejected.
-- **Booking fee:** when both sides agree and a booking is accepted, the fee is deducted from the trucker's credits. The fee is 2.5% of the agreed rate, minimum ₱150, and is set in `src/lib/constants.ts`. **Phone numbers are revealed only after this.**
+- **Booking fee:** when both sides agree and a booking is accepted, the fee is deducted from the trucker's credits. The fee is 2.5% of the agreed rate, minimum ₱75, and is set in `src/lib/constants.ts`. **Phone numbers are revealed only after this.**
 - **Not enough credits:**
   - a trucker can't send an offer or accept a request
   - if a shipper tries to accept an offer, the trucker is told to top up
