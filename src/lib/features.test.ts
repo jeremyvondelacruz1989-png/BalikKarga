@@ -5,10 +5,11 @@ import { laneAsLoad, laneAsTrip } from "./lanes";
 import { scoreMatch } from "./matching";
 
 describe("booking fee", () => {
-  it("is 5% with a ₱150 minimum", () => {
+  it("is 2.5% with a ₱150 minimum", () => {
     expect(bookingFee(1000)).toBe(150);
-    expect(bookingFee(16000)).toBe(800);
-    expect(bookingFee(9500)).toBe(475);
+    expect(bookingFee(5000)).toBe(150);
+    expect(bookingFee(16000)).toBe(400);
+    expect(bookingFee(26000)).toBe(650);
   });
 });
 

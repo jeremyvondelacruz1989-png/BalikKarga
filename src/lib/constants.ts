@@ -41,7 +41,7 @@ export const BACKHAUL_DISCOUNT = 0.6; // suggested price = 60% of the regular ma
  * Booking fee, paid by the trucker from prepaid credits (1 credit = PHP 1) when a
  * booking is accepted. Contact details are revealed only after the fee is paid.
  */
-export const BOOKING_FEE_RATE = 0.05;
+export const BOOKING_FEE_RATE = 0.025;
 export const BOOKING_FEE_MIN = 150;
 export const TOPUP_MIN = 200;
 export const TOPUP_PACKAGES = [500, 1000, 2500, 5000];
