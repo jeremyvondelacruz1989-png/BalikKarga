@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { fmtDate, fmtDateTime, km, php } from "@/lib/format";
-import { cargoTypeLabel, PLATFORM_FEE_RATE, truckTypeLabel } from "@/lib/constants";
+import { bookingFee, cargoTypeLabel, truckTypeLabel } from "@/lib/constants";
 import { availableActions } from "@/lib/booking-rules";
 import { marketRate } from "@/lib/matching";
 import { needsRoro } from "@/lib/geo";
@@ -25,7 +25,13 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
   const { id } = await params;
   const b = await db.booking.findUnique({
     where: { id },
-    include: { load: true, trip: { include: { truck: true } }, shipper: true, trucker: true },
+    include: {
+      load: true,
+      trip: { include: { truck: true } },
+      shipper: true,
+      trucker: true,
+      photos: { orderBy: { createdAt: "asc" } },
+    },
   });
   if (!b) notFound();
   const isParty = b.shipperId === user.id || b.truckerId === user.id;
@@ -36,6 +42,8 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
   const saving = regular > 0 ? Math.round((1 - b.agreedRate / regular) * 100) : 0;
   const stepIdx = STEPS.indexOf(b.status);
   const showContacts = ["ACCEPTED", "IN_TRANSIT", "DELIVERED"].includes(b.status);
+  const fee = b.feeCharged ?? bookingFee(b.agreedRate);
+  const isTrucker = user.id === b.truckerId;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -103,7 +111,21 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
           </div>
         </dl>
         {!showContacts && isParty && (
-          <p className="mt-4 text-xs text-slate-500">Phone numbers are shared once the booking is accepted.</p>
+          <p className="mt-4 rounded border border-dashed border-slate-300 p-3 text-xs text-slate-600">
+            🔒 Phone numbers are revealed once the booking is accepted and the trucker&apos;s ₱{fee.toLocaleString()} booking fee is
+            paid from credits.
+            {isTrucker && b.status === "PENDING" && (
+              <>
+                {" "}
+                You have <b>₱{user.creditBalance.toLocaleString()}</b> in credits.
+                {user.creditBalance < fee && (
+                  <a href="/credits" className="ml-1 font-semibold text-brand-700">
+                    Top up →
+                  </a>
+                )}
+              </>
+            )}
+          </p>
         )}
         {b.message && <p className="mt-4 rounded bg-slate-50 p-3 text-sm">&ldquo;{b.message}&rdquo;</p>}
         {b.podNote && (
@@ -111,15 +133,44 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
             <b>Proof of delivery:</b> {b.podNote} {b.deliveredAt && <span className="text-slate-500">· {fmtDateTime(b.deliveredAt)}</span>}
           </p>
         )}
-        {user.role === "ADMIN" && (
-          <p className="mt-4 text-xs text-slate-500">Platform fee @ {PLATFORM_FEE_RATE * 100}%: {php(b.agreedRate * PLATFORM_FEE_RATE)}</p>
+        {(user.role === "ADMIN" || isTrucker) && b.feeCharged != null && (
+          <p className="mt-4 text-xs text-slate-500">Booking fee paid by trucker: {php(b.feeCharged)}</p>
+        )}
+        {b.photos.length > 0 && (
+          <div className="mt-5 space-y-3">
+            {(["PICKUP", "DELIVERY"] as const).map((stage) => {
+              const photos = b.photos.filter((p) => p.stage === stage);
+              if (photos.length === 0) return null;
+              return (
+                <div key={stage}>
+                  <h3 className="mb-2 text-sm font-semibold">{stage === "PICKUP" ? "Pickup photos" : "Delivery photos"}</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {photos.map((p) => (
+                      <a key={p.id} href={`/files/${p.fileId}`} target="_blank" rel="noreferrer">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={`/files/${p.fileId}`}
+                          alt={`${stage.toLowerCase()} photo`}
+                          className="h-28 w-28 rounded-md border border-slate-200 object-cover hover:opacity-90"
+                        />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
 
       {actions.length > 0 && (
         <div className="card flex flex-wrap items-end gap-3 p-5">
           {actions.map((a) => (
-            <ActionForm key={a} action={updateBooking} className={a === "deliver" ? "flex w-full flex-wrap items-end gap-2" : ""}>
+            <ActionForm
+              key={a}
+              action={updateBooking}
+              className={a === "deliver" || a === "start" ? "flex w-full flex-wrap items-end gap-2" : ""}
+            >
               <input type="hidden" name="id" value={b.id} />
               <input type="hidden" name="action" value={a} />
               {a === "deliver" && (
@@ -127,6 +178,21 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
                   <label>Proof of delivery</label>
                   <input name="podNote" placeholder="Received by Juan Santos, DR #00123" />
                 </div>
+              )}
+              {(a === "deliver" || a === "start") && (
+                <div className="min-w-64 flex-1">
+                  <label>
+                    {a === "deliver" ? "Photos of signed DR/waybill & unloaded cargo (required)" : "Photos of loaded cargo (optional)"}
+                  </label>
+                  <input name="photos" type="file" accept="image/*" capture="environment" multiple />
+                </div>
+              )}
+              {a === "accept" && (
+                <p className="w-full pb-2 text-xs text-slate-600">
+                  {isTrucker
+                    ? `Accepting deducts ₱${fee.toLocaleString()} from your credits and reveals contact details.`
+                    : `The trucker pays a ₱${fee.toLocaleString()} booking fee from their credits; contact details are then revealed.`}
+                </p>
               )}
               <SubmitButton className={a === "cancel" || a === "decline" ? "btn-danger" : "btn-primary"}>
                 {ACTION_LABELS[a]}

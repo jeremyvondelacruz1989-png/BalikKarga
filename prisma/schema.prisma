@@ -23,6 +23,8 @@ model User {
   phone        String?
   city         String?
   verified     Boolean  @default(false) // KYC checked by an admin
+  creditBalance Float   @default(0) // truckers: prepaid credits, 1 credit = PHP 1
+  smsEnabled   Boolean  @default(true)
   createdAt    DateTime @default(now())
 
   sessions         Session[]
@@ -32,6 +34,10 @@ model User {
   shipperBookings  Booking[]      @relation("ShipperBookings")
   truckerBookings  Booking[]      @relation("TruckerBookings")
   notifications    Notification[]
+  creditTxns       CreditTransaction[]
+  files            StoredFile[]
+  documents        VerificationDocument[]
+  savedLanes       SavedLane[]
 }
 
 model Session {
@@ -58,6 +64,8 @@ model Truck {
 
   owner       User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   returnTrips ReturnTrip[]
+  documents   VerificationDocument[]
+  savedLanes  SavedLane[]
 
   @@index([ownerId])
 }
@@ -124,6 +132,7 @@ model Booking {
   deliveredAt DateTime?
   rating      Int? // shipper's 1-5 rating of the trucker
   loadedKm    Float? // estimated loaded distance, for "empty km avoided"
+  feeCharged  Float? // credits deducted from the trucker when accepted
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -131,6 +140,7 @@ model Booking {
   trip    ReturnTrip @relation(fields: [tripId], references: [id], onDelete: Cascade)
   shipper User       @relation("ShipperBookings", fields: [shipperId], references: [id], onDelete: Cascade)
   trucker User       @relation("TruckerBookings", fields: [truckerId], references: [id], onDelete: Cascade)
+  photos  BookingPhoto[]
 
   @@index([status])
   @@index([loadId])
@@ -149,4 +159,100 @@ model Notification {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, read])
+}
+
+// Credit ledger. Top-ups start PENDING until an admin confirms the payment;
+// fees and refunds are APPROVED immediately. User.creditBalance is the sum of
+// APPROVED rows and is updated in the same transaction.
+model CreditTransaction {
+  id         String    @id @default(cuid())
+  userId     String
+  type       String // TOPUP | BOOKING_FEE | REFUND | ADJUSTMENT
+  amount     Float // positive adds credits, negative deducts
+  status     String    @default("APPROVED") // PENDING | APPROVED | REJECTED
+  method     String? // GCASH | MAYA | BANK (top-ups)
+  reference  String? // payment reference number
+  receiptId  String? // StoredFile with the payment screenshot
+  bookingId  String?
+  note       String?
+  reviewedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([status])
+}
+
+// Uploaded file metadata; bytes live in the storage driver (src/lib/storage.ts).
+model StoredFile {
+  id         String   @id @default(cuid())
+  ownerId    String
+  bookingId  String? // set for proof-of-delivery photos, so both parties can view
+  filename   String
+  mimeType   String
+  size       Int
+  storageKey String   @unique
+  createdAt  DateTime @default(now())
+
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+}
+
+model VerificationDocument {
+  id         String    @id @default(cuid())
+  userId     String
+  truckId    String? // for truck documents (OR/CR, CPC)
+  docType    String // see DOC_TYPES
+  fileId     String
+  status     String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  reviewNote String?
+  reviewedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  truck Truck? @relation(fields: [truckId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+}
+
+model BookingPhoto {
+  id           String   @id @default(cuid())
+  bookingId    String
+  stage        String // PICKUP | DELIVERY
+  fileId       String
+  uploadedById String
+  createdAt    DateTime @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+}
+
+model SmsLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  phone      String
+  message    String
+  status     String // SENT | TEST | FAILED
+  error      String?
+  createdAt  DateTime @default(now())
+}
+
+// A regular route. Truckers: "my truck often comes back empty from origin to dest".
+// Shippers: "I often ship from origin to dest". New matching trips/loads trigger alerts.
+model SavedLane {
+  id          String   @id @default(cuid())
+  userId      String
+  originCity  String
+  destCity    String
+  truckId     String? // trucker lanes
+  weightTons  Float? // shipper lanes: typical load weight
+  maxDetourKm Int      @default(50)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  truck Truck? @relation(fields: [truckId], references: [id], onDelete: Cascade)
+
+  @@index([active])
 }

@@ -1,9 +1,15 @@
 "use client";
 
-import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
+import { createContext, useActionState, useContext, useEffect, useRef, useTransition } from "react";
 import type { FormState } from "@/app/actions";
 
+const PendingContext = createContext(false);
+
+/**
+ * Form bound to a server action that shows its error/success message.
+ * Submits via onSubmit (not the `action` prop) so that React does not clear
+ * what the user typed when the server returns a validation error.
+ */
 export function ActionForm({
   action,
   children,
@@ -15,36 +21,43 @@ export function ActionForm({
   className?: string;
   resetOnSuccess?: boolean;
 }) {
-  const [state, formAction] = useActionState(action, undefined);
+  const [state, formAction, actionPending] = useActionState(action, undefined);
+  const [transitionPending, startTransition] = useTransition();
+  const formRef = useRef<HTMLFormElement>(null);
+  const pending = actionPending || transitionPending;
+
+  useEffect(() => {
+    if (resetOnSuccess && state?.ok) formRef.current?.reset();
+  }, [state, resetOnSuccess]);
+
   return (
     <form
-      action={formAction}
+      ref={formRef}
       className={className}
-      key={resetOnSuccess && state?.ok ? String(Math.random()) : undefined}
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (pending) return;
+        const formData = new FormData(e.currentTarget);
+        startTransition(() => formAction(formData));
+      }}
     >
       {state?.error && (
-        <p role="alert" className="mb-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+        <p role="alert" className="mb-3 w-full rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
           {state.error}
         </p>
       )}
       {state?.ok && (
-        <p role="status" className="mb-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+        <p role="status" className="mb-3 w-full rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
           {state.ok}
         </p>
       )}
-      {children}
+      <PendingContext.Provider value={pending}>{children}</PendingContext.Provider>
     </form>
   );
 }
 
-export function SubmitButton({
-  children,
-  className = "btn-primary",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  const { pending } = useFormStatus();
+export function SubmitButton({ children, className = "btn-primary" }: { children: React.ReactNode; className?: string }) {
+  const pending = useContext(PendingContext);
   return (
     <button type="submit" className={className} disabled={pending}>
       {pending ? "Saving…" : children}

@@ -3,6 +3,7 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { roadKm } from "../src/lib/geo";
+import { bookingFee } from "../src/lib/constants";
 
 const db = new PrismaClient();
 
@@ -18,6 +19,12 @@ function day(n: number, hour = 8) {
 }
 
 async function main() {
+  await db.smsLog.deleteMany();
+  await db.savedLane.deleteMany();
+  await db.bookingPhoto.deleteMany();
+  await db.verificationDocument.deleteMany();
+  await db.creditTransaction.deleteMany();
+  await db.storedFile.deleteMany();
   await db.notification.deleteMany();
   await db.booking.deleteMany();
   await db.load.deleteMany();
@@ -98,7 +105,7 @@ async function main() {
     data: { loadId: lAppliance.id, tripId: tManila.id, shipperId: maria.id, truckerId: ilocos.id, initiatedBy: "TRUCKER", agreedRate: 26000, message: "Trailer can take all 8 t in one trip.", loadedKm: roadKm("Valenzuela", "Laoag") },
   });
   const accepted = await db.booking.create({
-    data: { loadId: lBohol.id, tripId: tBohol.id, shipperId: cebuHw.id, truckerId: bisaya.id, initiatedBy: "SHIPPER", agreedRate: 16000, status: "ACCEPTED", loadedKm: roadKm("Tagbilaran", "Cebu City") },
+    data: { loadId: lBohol.id, tripId: tBohol.id, shipperId: cebuHw.id, truckerId: bisaya.id, initiatedBy: "SHIPPER", agreedRate: 16000, status: "ACCEPTED", feeCharged: bookingFee(16000), loadedKm: roadKm("Tagbilaran", "Cebu City") },
   });
   await db.load.update({ where: { id: lBohol.id }, data: { status: "MATCHED" } });
   await db.returnTrip.update({ where: { id: tBohol.id }, data: { status: "BOOKED" } });
@@ -118,10 +125,43 @@ async function main() {
     const l = await db.load.create({
       data: { shipperId, title: ["Bottled water pallets", "Pangasinan mangoes", "Hollow blocks", "Frozen chicken"][i], cargoType: ["FMCG", "AGRI", "CONSTRUCTION", "COLD_CHAIN"][i], weightTons: tons, pickupCity: pickup, dropCity: drop, pickupDate: day(-20 + i * 4, 0), deliverBy: day(-19 + i * 4, 23), status: "DELIVERED" },
     });
-    await db.booking.create({
-      data: { loadId: l.id, tripId: t.id, shipperId, truckerId, initiatedBy: "SHIPPER", agreedRate: rate, status: "DELIVERED", rating, loadedKm: roadKm(pickup, drop), pickedUpAt: day(-20 + i * 4, 9), deliveredAt: day(-20 + i * 4, 17), podNote: "Received complete, DR #" + (1040 + i), createdAt: day(-21 + i * 4) },
+    const hb = await db.booking.create({
+      data: { loadId: l.id, tripId: t.id, shipperId, truckerId, initiatedBy: "SHIPPER", agreedRate: rate, status: "DELIVERED", feeCharged: bookingFee(rate), rating, loadedKm: roadKm(pickup, drop), pickedUpAt: day(-20 + i * 4, 9), deliveredAt: day(-20 + i * 4, 17), podNote: "Received complete, DR #" + (1040 + i), createdAt: day(-21 + i * 4) },
+    });
+    await db.creditTransaction.create({
+      data: { userId: truckerId, type: "BOOKING_FEE", amount: -bookingFee(rate), bookingId: hb.id, note: "Booking fee", createdAt: day(-21 + i * 4) },
     });
   }
+
+  // --- Credits ----------------------------------------------------------------
+  // Approved top-ups, then balance = top-ups minus fees already recorded above.
+  const topups: [string, number, string, string][] = [
+    [ramon.id, 2500, "GCASH", "1009 882 31457"],
+    [bisaya.id, 1500, "MAYA", "MY-55120934"],
+    [coldx.id, 2000, "BANK", "BDO-77812"],
+  ];
+  for (const [userId, amount, method, reference] of topups)
+    await db.creditTransaction.create({ data: { userId, type: "TOPUP", amount, method, reference, status: "APPROVED", reviewedAt: day(-25), createdAt: day(-25) } });
+  await db.creditTransaction.create({
+    data: { userId: bisaya.id, type: "BOOKING_FEE", amount: -bookingFee(16000), bookingId: accepted.id, note: "Booking fee: Bohol-made furniture order" },
+  });
+  // Ilocos Freight has no credits yet but has a top-up waiting for admin review.
+  await db.creditTransaction.create({ data: { userId: ilocos.id, type: "TOPUP", amount: 1000, method: "GCASH", reference: "1012 554 90021", status: "PENDING" } });
+  for (const u of [ramon, bisaya, coldx, ilocos]) {
+    const sum = await db.creditTransaction.aggregate({ where: { userId: u.id, status: "APPROVED" }, _sum: { amount: true } });
+    await db.user.update({ where: { id: u.id }, data: { creditBalance: sum._sum.amount ?? 0 } });
+  }
+
+  // --- Saved lanes --------------------------------------------------------------
+  await db.savedLane.createMany({
+    data: [
+      { userId: ramon.id, truckId: rdcWing.id, originCity: "Batangas City", destCity: "Valenzuela", maxDetourKm: 60 },
+      { userId: ramon.id, truckId: rdc6w.id, originCity: "Baguio", destCity: "Valenzuela", maxDetourKm: 40 },
+      { userId: bisaya.id, truckId: bisFlat.id, originCity: "Toledo", destCity: "Mandaue", maxDetourKm: 30 },
+      { userId: maria.id, originCity: "Tarlac City", destCity: "Laoag", weightTons: 10 },
+      { userId: coop.id, originCity: "Tagum", destCity: "Cagayan de Oro", weightTons: 8 },
+    ],
+  });
 
   // --- Notifications --------------------------------------------------------
   await db.notification.createMany({

@@ -16,13 +16,18 @@ const NAV: Record<string, { href: string; label: string }[]> = {
     { href: "/loads", label: "My loads" },
     { href: "/trips", label: "Find return trucks" },
     { href: "/bookings", label: "Bookings" },
+    { href: "/lanes", label: "Lanes" },
+    { href: "/verification", label: "Verification" },
   ],
   TRUCKER: [
     { href: "/dashboard", label: "Dashboard" },
-    { href: "/trips", label: "My return trips" },
+    { href: "/trips", label: "My trips" },
     { href: "/loads", label: "Find loads" },
     { href: "/bookings", label: "Bookings" },
+    { href: "/lanes", label: "Lanes" },
     { href: "/trucks", label: "Trucks" },
+    { href: "/verification", label: "Verification" },
+    { href: "/credits", label: "Credits" },
   ],
   ADMIN: [
     { href: "/dashboard", label: "Dashboard" },
@@ -39,7 +44,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="en">
       <body className="min-h-screen">
         <header className="border-b border-slate-200 bg-white">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
             <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-2">
               <span className="flex h-8 w-8 items-center justify-center rounded-md bg-brand-600 text-lg text-white">⇄</span>
               <span className="leading-tight">
@@ -48,9 +53,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               </span>
             </Link>
             {user && (
-              <nav className="flex flex-wrap gap-1 text-sm">
+              <nav className="flex flex-wrap gap-0.5 text-sm">
                 {NAV[user.role]?.map((n) => (
-                  <Link key={n.href} href={n.href} className="rounded-md px-2.5 py-1.5 font-medium text-slate-700 hover:bg-slate-100">
+                  <Link key={n.href} href={n.href} className="rounded-md px-2 py-1.5 font-medium text-slate-700 hover:bg-slate-100">
                     {n.label}
                   </Link>
                 ))}
@@ -67,7 +72,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                       </span>
                     )}
                   </Link>
-                  <span className="hidden text-slate-600 sm:inline">
+                  {user.role === "TRUCKER" && (
+                    <Link href="/credits" className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-700">
+                      ₱{user.creditBalance.toLocaleString()} credits
+                    </Link>
+                  )}
+                  <span className="hidden text-slate-600 2xl:inline">
                     {user.name} · <span className="text-xs uppercase">{user.role.toLowerCase()}</span>
                   </span>
                   <form action={logout}>

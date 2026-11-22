@@ -135,6 +135,7 @@ async function OwnerMatches({ trip }: { trip: Parameters<typeof matchesForTrip>[
                   tripId={trip.id}
                   rate={trip.askingRate ?? load.budget ?? match.suggestedRate}
                   label="Offer to carry"
+                    showFee
                 />
               </div>
             </div>

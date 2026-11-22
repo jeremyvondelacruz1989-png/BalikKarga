@@ -5,7 +5,10 @@ const nextConfig: NextConfig = {
   experimental: {
     // Forms use server actions, which check the request origin. GitHub Codespaces
     // serves the app through a *.app.github.dev proxy, so allow that host.
-    serverActions: { allowedOrigins: ["localhost:3000", "*.app.github.dev"] },
+    serverActions: {
+      allowedOrigins: ["localhost:3000", "*.app.github.dev"],
+      bodySizeLimit: "32mb", // up to 6 delivery photos of 5 MB each
+    },
   },
 };
 

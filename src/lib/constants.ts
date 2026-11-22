@@ -37,8 +37,38 @@ export type BookingStatus = (typeof BOOKING_STATUSES)[number];
 
 /** Backhaul loads are sold at a discount to a regular trip because the truck is coming back anyway. */
 export const BACKHAUL_DISCOUNT = 0.6; // suggested price = 60% of the regular market rate
-/** Platform commission taken from the agreed rate (shown to admins only in this MVP). */
-export const PLATFORM_FEE_RATE = 0.08;
+/**
+ * Booking fee, paid by the trucker from prepaid credits (1 credit = PHP 1) when a
+ * booking is accepted. Contact details are revealed only after the fee is paid.
+ */
+export const BOOKING_FEE_RATE = 0.05;
+export const BOOKING_FEE_MIN = 150;
+export const TOPUP_MIN = 200;
+export const TOPUP_PACKAGES = [500, 1000, 2500, 5000];
+
+export function bookingFee(agreedRate: number): number {
+  return Math.max(BOOKING_FEE_MIN, Math.round(agreedRate * BOOKING_FEE_RATE));
+}
+
+export const PAYMENT_METHODS = { GCASH: "GCash", MAYA: "Maya", BANK: "Bank transfer" } as const;
+export type PaymentMethod = keyof typeof PAYMENT_METHODS;
+
+/** Where truckers send top-up payments. Set these in .env; the defaults are placeholders. */
+export const PAYMENT_ACCOUNTS: Record<PaymentMethod, string> = {
+  GCASH: process.env.NEXT_PUBLIC_PAY_GCASH || "0917 000 0000 (BalikKarga Inc.) — set NEXT_PUBLIC_PAY_GCASH",
+  MAYA: process.env.NEXT_PUBLIC_PAY_MAYA || "0918 000 0000 (BalikKarga Inc.) — set NEXT_PUBLIC_PAY_MAYA",
+  BANK: process.env.NEXT_PUBLIC_PAY_BANK || "BDO 0000-0000-0000 (BalikKarga Inc.) — set NEXT_PUBLIC_PAY_BANK",
+};
+
+export const DOC_TYPES = {
+  GOV_ID: { label: "Government ID", for: "ALL" },
+  DRIVERS_LICENSE: { label: "Driver's license", for: "TRUCKER" },
+  DTI_SEC: { label: "DTI / SEC registration", for: "ALL" },
+  BIR_2303: { label: "BIR Form 2303", for: "ALL" },
+  OR_CR: { label: "Truck OR/CR", for: "TRUCK" },
+  LTFRB_CPC: { label: "LTFRB franchise (CPC)", for: "TRUCK" },
+} as const;
+export type DocType = keyof typeof DOC_TYPES;
 /** Rough diesel truck emissions, for the "CO2 avoided" figure. */
 export const KG_CO2_PER_KM = 0.9;
 

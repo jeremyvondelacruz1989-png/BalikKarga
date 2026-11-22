@@ -3,9 +3,9 @@ import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { fmtDate, fmtDateTime, km, php } from "@/lib/format";
 import { matchesForLoad, matchesForTrip } from "@/lib/queries";
-import { KG_CO2_PER_KM, PLATFORM_FEE_RATE } from "@/lib/constants";
+import { KG_CO2_PER_KM } from "@/lib/constants";
 import { Empty, PageHeader, Route, ScoreRing, Stat, VerifiedBadge } from "@/components/ui";
-import { markNotificationsRead } from "../actions";
+import { markNotificationsRead, toggleSms } from "../actions";
 
 export default async function Dashboard() {
   const user = await requireUser();
@@ -29,14 +29,21 @@ export default async function Dashboard() {
       <section id="inbox" className="card p-5">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-semibold">Notifications</h2>
-          {notifications.some((n) => !n.read) && (
-            <form action={markNotificationsRead}>
-              <button className="text-xs font-semibold text-brand-700">Mark all read</button>
+          <div className="flex items-center gap-4">
+            <form action={toggleSms}>
+              <button className="text-xs font-semibold text-slate-600 hover:text-ink">
+                SMS alerts: {user.smsEnabled ? "On" : "Off"} ({user.phone ?? "no number"}) · {user.smsEnabled ? "Turn off" : "Turn on"}
+              </button>
             </form>
-          )}
+            {notifications.some((n) => !n.read) && (
+              <form action={markNotificationsRead}>
+                <button className="text-xs font-semibold text-brand-700">Mark all read</button>
+              </form>
+            )}
+          </div>
         </div>
         {notifications.length === 0 ? (
-          <p className="text-sm text-slate-500">Nothing yet. You&apos;ll also get these by SMS/Viber once enabled.</p>
+          <p className="text-sm text-slate-500">Nothing yet. Important updates are also sent to you by SMS.</p>
         ) : (
           <ul className="divide-y divide-slate-100 text-sm">
             {notifications.map((n) => (
@@ -120,7 +127,8 @@ async function ShipperHome({ userId }: { userId: string }) {
 }
 
 async function TruckerHome({ userId }: { userId: string }) {
-  const [trucks, openTrips, active, delivered] = await Promise.all([
+  const [me, trucks, openTrips, active, delivered] = await Promise.all([
+    db.user.findUniqueOrThrow({ where: { id: userId }, select: { creditBalance: true } }),
     db.truck.count({ where: { ownerId: userId } }),
     db.returnTrip.findMany({ where: { truckerId: userId, status: "OPEN" }, include: { truck: true }, orderBy: { availableFrom: "asc" } }),
     db.booking.count({ where: { truckerId: userId, status: { in: ["PENDING", "ACCEPTED", "IN_TRANSIT"] } } }),
@@ -139,7 +147,10 @@ async function TruckerHome({ userId }: { userId: string }) {
 
   return (
     <>
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-4">
+        <Link href="/credits" className="block">
+          <Stat label="Credits" value={php(me.creditBalance)} hint={me.creditBalance < 150 ? "Top up to accept bookings →" : "Top up →"} />
+        </Link>
         <Stat label="Open return trips" value={openTrips.length} />
         <Stat label="Active bookings" value={active} />
         <Stat label="Backhaul earnings" value={php(earned)} hint={`${km(filled)} that would have been empty`} />
@@ -198,7 +209,10 @@ async function TruckerHome({ userId }: { userId: string }) {
 }
 
 async function AdminHome() {
-  const [users, unverifiedUsers, unverifiedTrucks, openLoads, openTrips, delivered] = await Promise.all([
+  const [fees, pendingTopups, pendingDocs, users, unverifiedUsers, unverifiedTrucks, openLoads, openTrips, delivered] = await Promise.all([
+    db.creditTransaction.aggregate({ where: { status: "APPROVED", type: { in: ["BOOKING_FEE", "REFUND"] } }, _sum: { amount: true } }),
+    db.creditTransaction.count({ where: { type: "TOPUP", status: "PENDING" } }),
+    db.verificationDocument.count({ where: { status: "PENDING" } }),
     db.user.count({ where: { role: { not: "ADMIN" } } }),
     db.user.count({ where: { verified: false, role: { not: "ADMIN" } } }),
     db.truck.count({ where: { franchiseVerified: false } }),
@@ -213,12 +227,13 @@ async function AdminHome() {
       <div className="grid gap-4 sm:grid-cols-4">
         <Stat label="Users" value={users} hint={`${unverifiedUsers} awaiting verification`} />
         <Stat label="Open loads / trips" value={`${openLoads} / ${openTrips}`} />
-        <Stat label="GMV delivered" value={php(gmv)} hint={`Fees @${PLATFORM_FEE_RATE * 100}%: ${php(gmv * PLATFORM_FEE_RATE)}`} />
+        <Stat label="GMV delivered" value={php(gmv)} hint={`Booking fees earned: ${php(-(fees._sum.amount ?? 0))}`} />
         <Stat label="Empty km filled" value={km(filled)} hint={`≈ ${Math.round(filled * KG_CO2_PER_KM).toLocaleString()} kg CO₂ avoided`} />
       </div>
-      {(unverifiedUsers > 0 || unverifiedTrucks > 0) && (
+      {(pendingTopups > 0 || pendingDocs > 0 || unverifiedUsers > 0 || unverifiedTrucks > 0) && (
         <Link href="/admin" className="card block border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
-          {unverifiedUsers} user(s) and {unverifiedTrucks} truck franchise(s) need verification →
+          To review: {pendingTopups} top-up(s), {pendingDocs} document(s), {unverifiedUsers} unverified user(s),{" "}
+          {unverifiedTrucks} unverified truck franchise(s) →
         </Link>
       )}
     </>

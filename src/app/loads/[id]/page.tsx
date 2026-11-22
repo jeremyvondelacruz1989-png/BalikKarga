@@ -173,6 +173,7 @@ async function TruckerOffer({ load, truckerId }: { load: Load; truckerId: string
                     tripId={trip.id}
                     rate={trip.askingRate ?? load.budget ?? match.suggestedRate}
                     label="Offer to carry"
+                    showFee
                   />
                 </div>
               )}

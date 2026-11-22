@@ -14,9 +14,42 @@ Shippers pay a discounted backhaul rate, and truckers earn on kilometers they wo
 | **Shipper** | Post loads (cargo type, weight, truck type, pickup/drop-off, dates, budget) · see trucks already heading that way with a fit score and suggested price · request a truck · accept trucker offers · rate the trucker after delivery |
 | **Admin** | Verify users and truck franchises · see GMV, platform fees, empty km filled and CO₂ avoided |
 
-Also included:
-- **Notifications inbox.** Every event goes through one function, `src/lib/notify.ts`, which is where SMS/Viber sending gets plugged in.
-- **Contact privacy.** Phone numbers are shown only after a booking is accepted.
+### Trucker credits and booking fees
+- Truckers keep a prepaid **credit balance**, where 1 credit = ₱1.
+- **Top-up:** the trucker sends money by GCash, Maya or bank transfer, then submits the amount, the reference number and an optional receipt screenshot. An admin checks the payment and approves it, and the credits are added. Duplicate reference numbers are rejected.
+- **Booking fee:** when both sides agree and a booking is accepted, the fee is deducted from the trucker's credits. The fee is 5% of the agreed rate, minimum ₱150, and is set in `src/lib/constants.ts`. **Phone numbers are revealed only after this.**
+- **Not enough credits:**
+  - a trucker can't send an offer or accept a request
+  - if a shipper tries to accept an offer, the trucker is told to top up
+- **Refunds:** if the shipper cancels an accepted booking, the fee is refunded. If the trucker cancels, the fee is kept.
+- Every change is recorded in a ledger shown on the trucker's **Credits** page.
+
+### Verification documents
+- Users upload documents as photos or PDFs (max 5 MB, file type checked from the content):
+  - **everyone:** government ID, plus DTI/SEC or BIR 2303
+  - **truckers:** driver's license
+  - **per truck:** OR/CR and LTFRB franchise (CPC)
+- Admins open each file and approve or reject it, with an optional note.
+- Approving a CPC marks that truck as **LTFRB-verified**.
+- Files can be opened only by their owner and admins.
+
+### SMS alerts (Semaphore)
+- Important events are texted to the user: requests, confirmations, pickup, delivery, top-up approvals and lane matches. Each text is one 160-character SMS with a link back to the app.
+- Users can turn SMS off from their dashboard.
+- **Test mode:** without `SEMAPHORE_API_KEY`, messages aren't sent. They're logged on the admin page instead.
+
+### Saved lanes and match alerts
+- **Truckers** save routes their trucks often drive home empty, such as Batangas → Valenzuela. They're alerted when a new load fits.
+- **Shippers** save routes they ship often. They're alerted when a truck heading that way posts a return trip.
+- Lanes use the same matching engine as everything else.
+
+### Photo proof of delivery
+- **At pickup:** the driver can attach photos (optional).
+- **At delivery:** at least one photo of the signed DR/waybill or unloaded cargo is required, plus the receiver's name. On phones, the camera opens directly.
+- Only the shipper, the trucker and admins can see the photos.
+
+### Also included
+- **Notifications inbox.** All events go through `src/lib/notify.ts`, which sends the SMS too.
 
 ### How matching works (`src/lib/matching.ts`)
 A load fits a return trip when **all** of these hold:
@@ -56,6 +89,16 @@ npm test           # matching, pricing and booking-rule unit tests
 npm run typecheck
 ```
 
+## Settings (`.env`)
+
+| Variable | What it does |
+| --- | --- |
+| `DATABASE_URL` | Database connection |
+| `UPLOAD_DIR` | Where uploaded files are stored (default `./uploads`) |
+| `SEMAPHORE_API_KEY`, `SEMAPHORE_SENDER_NAME` | Turn on real SMS. Get a key at semaphore.co. The sender name must be approved by Semaphore. |
+| `APP_URL` | Your public URL, used in SMS links |
+| `NEXT_PUBLIC_PAY_GCASH`, `NEXT_PUBLIC_PAY_MAYA`, `NEXT_PUBLIC_PAY_BANK` | The accounts truckers pay into for top-ups, shown on the Credits page |
+
 ## Deploy (Vercel + Supabase), about 15 minutes
 
 1. Create a free project at **supabase.com** and copy the *Session pooler* connection string (Project Settings → Database).
@@ -63,6 +106,9 @@ npm run typecheck
 3. Locally, set `DATABASE_URL` to the Supabase string and run `npx prisma db push`. Optionally run `npm run db:seed` for demo data.
 4. At **vercel.com**, import this GitHub repo and add the `DATABASE_URL` environment variable. Deploy.
 5. Before real users: remove the demo accounts (or don't seed), and change the admin password.
+
+> **Uploads on Vercel.** Vercel's disk isn't permanent, so uploaded documents and photos would disappear. Before going live there, switch `src/lib/storage.ts` to Supabase Storage or S3. Only `putBytes` and `getBytes` need to change.
+> This isn't needed on a regular server or VPS, where local disk works.
 
 ## Tech
 - Next.js 15 (App Router, server actions)
@@ -73,10 +119,11 @@ npm run typecheck
 - Vitest for unit tests
 
 ## Not in the MVP yet (suggested next steps)
-- **SMS/Viber notifications.** Semaphore or Twilio, wired into `notify.ts`.
-- **Payments and escrow.** GCash/Maya/bank via PayMongo or Xendit, plus faster payouts to truckers.
-- **Document uploads for verification.** OR/CR, LTFRB CPC, driver's license, DTI/SEC, BIR 2303.
-- **Live GPS tracking and photo proof of delivery.**
+- **Automatic top-ups.** Use the PayMongo or Xendit GCash/Maya checkout so credits are added instantly, with no admin step.
+- **Payments for the freight itself.** Escrow between shipper and trucker, plus faster payouts.
+- **Supabase Storage for uploads.** Needed for Vercel.
+- **Viber Business Messages.** As an alternative to SMS.
+- **Live GPS tracking.**
 - **Real road distances and toll and truck-ban windows.** Google Routes or OSRM, plus MMDA truck-ban windows.
 - **Recurring lanes and saved searches**, with alerts when a match appears.
 - **Password reset and phone OTP login.**
