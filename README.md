@@ -31,6 +31,12 @@ Each eligible pair gets a 0–100 score:
 
 Distances are estimated road km between 68 PH logistics hubs. Rates in `src/lib/constants.ts` are placeholders, so tune them with real lane data.
 
+## Try it in your browser (no install)
+
+On the GitHub repo page, click **Code → Codespaces → Create codespace on main**.
+Setup takes about 2–3 minutes the first time: it installs dependencies, creates the database and loads demo data.
+The app then opens in a new tab. If it doesn't, open the **Ports** tab and click the globe icon next to port 3000.
+
 ## Run it locally
 
 Requires Node 20+.
