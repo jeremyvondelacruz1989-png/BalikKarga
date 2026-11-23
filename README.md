@@ -142,6 +142,9 @@ The browser tests (`e2e/`) build the app and run it on port 3100 with **their ow
 - Zod for validation
 - Session-cookie auth with bcrypt-hashed passwords
 - Vitest for unit tests
+- Landing page (`/`): plain HTML built in `src/lib/landing.ts` and served by `src/app/route.ts`, styled with the
+  design-taste-frontend kit in `public/assets` (see `.claude/skills/design-taste-frontend`). Signed-in users are
+  redirected to `/dashboard`; the live trip list and delivery figures come from the database.
 
 ## Not in the MVP yet (suggested next steps)
 - **Automatic top-ups.** Use the PayMongo or Xendit GCash/Maya checkout so credits are added instantly, with no admin step.

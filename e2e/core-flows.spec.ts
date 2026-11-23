@@ -5,10 +5,21 @@ import { fixture, formError, loginAs, openBooking, resetDb } from "./helpers";
 test.describe.serial("core marketplace flows", () => {
   test.beforeAll(() => resetDb());
 
-  test("public landing page shows open return trips", async ({ page }) => {
+  test("public landing page shows the redesign and its sign-up links", async ({ page }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (e) => errors.push(e.message));
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Don't drive home empty." })).toBeVisible();
-    await expect(page.getByText("Trucks heading home soon")).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Backhaul loads for trucks driving home empty" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Every load, matched to trucks going home" })).toBeAttached();
+    await expect(page.getByText(/Lanes across 66 hubs/)).toBeAttached();
+    await expect(page.locator('a[href="/signup?role=SHIPPER"]').first()).toBeVisible();
+    await expect(page.locator('a[href="/signup?role=TRUCKER"]').first()).toBeVisible();
+    // The page is public: no company or person names and no plate numbers, in text or in image alt text
+    const text = (await page.locator("body").innerText()) + (await page.locator("img").evaluateAll((imgs) => imgs.map((i) => i.getAttribute("alt")).join(" ")));
+    for (const name of ["RDC Trucking", "Ilocos Freight", "Bisaya Haulers", "Mindanao Cold", "Luzon Fresh", "Mandaue Home", "Golden Grain", "Ramon", "Maria Santos", "Jun Reyes"])
+      expect(text, `public page shows "${name}"`).not.toContain(name);
+    expect(text).not.toMatch(/\b[A-Z]{3} \d{4}\b/);
+    expect(errors).toEqual([]);
   });
 
   test("trucker accepts a request, picks up and delivers with proof", async ({ browser }) => {

@@ -8,7 +8,7 @@ test.describe.serial("trucker welcome bonus", () => {
 
   test("landing page advertises the bonus", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByText("once your documents are verified")).toBeVisible();
+    await expect(page.getByText("₱300 free once you are verified")).toBeAttached();
   });
 
   test("bonus is held until all required documents are approved", async ({ browser }) => {
