@@ -14,6 +14,11 @@ test.describe.serial("core marketplace flows", () => {
     await expect(page.getByText(/Lanes across 66 hubs/)).toBeAttached();
     await expect(page.locator('a[href="/signup?role=SHIPPER"]').first()).toBeVisible();
     await expect(page.locator('a[href="/signup?role=TRUCKER"]').first()).toBeVisible();
+    // The page is public: no company or person names and no plate numbers, in text or in image alt text
+    const text = (await page.locator("body").innerText()) + (await page.locator("img").evaluateAll((imgs) => imgs.map((i) => i.getAttribute("alt")).join(" ")));
+    for (const name of ["RDC Trucking", "Ilocos Freight", "Bisaya Haulers", "Mindanao Cold", "Luzon Fresh", "Mandaue Home", "Golden Grain", "Ramon", "Maria Santos", "Jun Reyes"])
+      expect(text, `public page shows "${name}"`).not.toContain(name);
+    expect(text).not.toMatch(/\b[A-Z]{3} \d{4}\b/);
     expect(errors).toEqual([]);
   });
 

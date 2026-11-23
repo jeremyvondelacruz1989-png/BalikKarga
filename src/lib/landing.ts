@@ -12,9 +12,12 @@ import { fmtDate } from "./format";
   moments). Signed-in users never see it: the route redirects them to /dashboard first.
 */
 
+/**
+ * A return trip as the public page shows it. Deliberately no company name, person or plate: the page is
+ * open to anyone, so a trip is shown by its truck class, route and date only.
+ */
 export interface LandingTrip {
-  company: string;
-  initials: string;
+  badge: string;
   origin: string;
   dest: string;
   truckLabel: string;
@@ -37,14 +40,32 @@ const addDays = (d: Date, n: number) => new Date(d.getTime() + n * 86_400_000);
 const arrow = `<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"/><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"/></svg>`;
 const tick = `<svg viewBox="0 0 16 16"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg>`;
 
+/** Short truck-class badge for the trip rows (in place of a company's initials). */
+export const TRUCK_BADGE: Record<string, string> = {
+  CLOSED_VAN_4W: "4W",
+  SIX_WHEELER: "6W",
+  WING_VAN_6W: "6W",
+  WING_VAN_10W: "10W",
+  FLATBED_10W: "10W",
+  REEFER: "RF",
+  TRAILER: "TR",
+};
+
+const seed = (origin: string, dest: string, type: keyof typeof TRUCK_TYPES): Omit<LandingTrip, "from"> => ({
+  badge: TRUCK_BADGE[type],
+  origin,
+  dest,
+  truckLabel: TRUCK_TYPES[type].label,
+});
+
 /** Return trips shown in the hero window when the database has fewer than six open ones (the demo seed's lanes). */
 const SEED_TRIPS: Omit<LandingTrip, "from">[] = [
-  { company: "RDC Trucking Services", initials: "RD", origin: "Batangas City", dest: "Valenzuela", truckLabel: TRUCK_TYPES.WING_VAN_10W.label },
-  { company: "RDC Trucking Services", initials: "RD", origin: "Baguio", dest: "Valenzuela", truckLabel: TRUCK_TYPES.SIX_WHEELER.label },
-  { company: "Ilocos Freight Lines", initials: "IF", origin: "Subic / Olongapo", dest: "Laoag", truckLabel: TRUCK_TYPES.WING_VAN_10W.label },
-  { company: "Bisaya Haulers", initials: "BH", origin: "Toledo", dest: "Mandaue", truckLabel: TRUCK_TYPES.FLATBED_10W.label },
-  { company: "Mindanao Cold Express", initials: "MC", origin: "Tagum", dest: "Cagayan de Oro", truckLabel: TRUCK_TYPES.REEFER.label },
-  { company: "Ilocos Freight Lines", initials: "IF", origin: "Manila", dest: "Laoag", truckLabel: TRUCK_TYPES.TRAILER.label },
+  seed("Batangas City", "Valenzuela", "WING_VAN_10W"),
+  seed("Baguio", "Valenzuela", "SIX_WHEELER"),
+  seed("Subic / Olongapo", "Laoag", "WING_VAN_10W"),
+  seed("Toledo", "Mandaue", "FLATBED_10W"),
+  seed("Tagum", "Cagayan de Oro", "REEFER"),
+  seed("Manila", "Laoag", "TRAILER"),
 ];
 
 
@@ -56,7 +77,7 @@ function heroRows(data: LandingData) {
   return [...live, ...fill]
     .map(
       (t, i) => `
-            <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="${(i % 5) + 1}">${esc(t.initials)}</span><span class="ui-win__who">${esc(t.company)}</span><span class="ui-win__sub">${esc(t.origin)} → ${esc(t.dest)}</span><span class="ui-win__st${i === 1 ? " is-you" : ""}" data-st>${i === 1 ? "Offer sent" : "Open"}</span><span class="ui-win__age">${esc(fmtDate(t.from))}</span></li>`,
+            <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="${(i % 5) + 1}">${esc(t.badge)}</span><span class="ui-win__who">${esc(t.truckLabel)}</span><span class="ui-win__sub">${esc(t.origin)} → ${esc(t.dest)}</span><span class="ui-win__st${i === 1 ? " is-you" : ""}" data-st>${i === 1 ? "Offer sent" : "Open"}</span><span class="ui-win__age">${esc(fmtDate(t.from))}</span></li>`,
     )
     .join("");
 }
@@ -245,7 +266,7 @@ export function renderLanding(data: LandingData): string {
         <div class="nav__menu">
           <div class="wrap grid">
             <a class="menu-card span-4" href="#matching">
-              <div class="panel"><img class="frame__img" src="/assets/screens/load-matches.jpg" width="820" height="401" alt="A shipper's load from Tarlac City to Laoag with two trucks heading that way" loading="lazy" data-source="client" data-subject="the shipper's load page"></div>
+              <div class="panel"><img class="frame__img" src="/assets/screens/load-matches.jpg" width="820" height="401" alt="A shipper's load from Lipa to Quezon City with a truck already heading that way" loading="lazy" data-source="client" data-subject="the shipper's load page"></div>
               <span class="t-card">Load matching</span>
               <span class="t-small muted">Trucks heading your way, scored 0 to 100</span>
             </a>
@@ -314,7 +335,7 @@ export function renderLanding(data: LandingData): string {
         </div>
         <div class="ly-piece ly-piece--note bk-note" aria-hidden="true" data-ly-steps="700">
           <div class="bk-note__row"><h3>Tarlac City → Laoag</h3><span class="bk-chip" data-step data-step-at="4">Requested</span></div>
-          <div class="bk-line" data-step><i>✓</i><span><b>Ilocos Freight Lines</b>, fit 90</span></div>
+          <div class="bk-line" data-step><i>✓</i><span><b>10-wheeler wing van</b>, fit 90</span></div>
           <div class="bk-line" data-step><i>✓</i><span>On the way home, <b>+9 km</b> detour</span></div>
           <div class="bk-line" data-step><i>✓</i><span>Suggested <b>₱22,000</b>, regular ₱36,700</span></div>
         </div>
@@ -336,7 +357,7 @@ export function renderLanding(data: LandingData): string {
           <div class="ui ui-panel ui-win">
             <div class="ui-win__bar">
               <span class="ui-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-              <span class="ui-win__crumb">Luzon Fresh Distribution <i>/</i> <b>My loads</b></span>
+              <span class="ui-win__crumb">Shipper <i>/</i> <b>My loads</b></span>
               <span class="ui-spacer"></span>
             </div>
             <div class="ui-win__body">
@@ -375,14 +396,14 @@ export function renderLanding(data: LandingData): string {
             <h4>Trucks already heading this way (2)</h4>
             <div class="bk-match">
               <span class="bk-fit">90<small>FIT</small></span>
-              <span><b>Ilocos Freight Lines</b><span class="bk-unv">Unverified</span></span>
+              <span><b>10-wheeler wing van</b><span class="bk-unv">Unverified</span></span>
               <span class="ui-btn ui-btn--sm">Request truck</span>
               <span class="bk-match__sub">10-wheeler wing van, 14 t · empty at Subic, going home to Laoag · ${esc(tripA)}</span>
               <span class="bk-match__nums">Loaded 408 km · +9 km detour · suggested <b>₱22,000</b> (regular ≈ ₱36,700)</span>
             </div>
             <div class="bk-match">
               <span class="bk-fit bk-fit--b">80<small>FIT</small></span>
-              <span><b>Ilocos Freight Lines</b><span class="bk-unv">Unverified</span></span>
+              <span><b>10-wheeler wing van</b><span class="bk-unv">Unverified</span></span>
               <span class="ui-btn ui-btn--sm ui-btn--ghost">Request truck</span>
               <span class="bk-match__sub">Tractor head and trailer, 30 t · empty at Manila, going home to Laoag · ${esc(tripB)}</span>
               <span class="bk-match__nums">Loaded 408 km · +9 km detour · suggested <b>₱29,400</b> (regular ≈ ₱49,000)</span>
@@ -407,9 +428,9 @@ export function renderLanding(data: LandingData): string {
               <div class="stage stage--fade-b"><div class="at-rise fit" style="--fit-max:380px;--ax:max(24px, 50% - 190px);--ay:calc(100% - 180px);--ay-sm:calc(100% - 180px)" data-ui-loop>
                 <div class="ui ui-notify" data-ui="notify">
                   <ul class="ui-notify__list" data-notify-list>
-                    <li class="ui-note"><span class="ui-avatar ui-note__av" data-tone="1">MS</span><span class="ui-note__text"><span class="ui-note__title">Truck requested<time>now</time></span><span class="ui-note__body">Maria Santos wants your Baguio → Valenzuela trip</span></span><span class="ui-btn ui-btn--sm ui-note__btn">Open</span></li>
+                    <li class="ui-note"><span class="ui-avatar ui-note__av" data-tone="1">5t</span><span class="ui-note__text"><span class="ui-note__title">Truck requested<time>now</time></span><span class="ui-note__body">A shipper wants your Baguio → Valenzuela trip</span></span><span class="ui-btn ui-btn--sm ui-note__btn">Open</span></li>
                     <li class="ui-note"><span class="ui-note__ico"><svg class="ui-icon" viewBox="0 0 16 16"><path d="m3.5 8.4 2.8 2.8 6.2-6.4"/></svg></span><span class="ui-note__text"><span class="ui-note__title">Booking confirmed<time>4m</time></span><span class="ui-note__body">Phone numbers are now on the booking</span></span></li>
-                    <li class="ui-note"><span class="ui-avatar ui-note__av" data-tone="3">RD</span><span class="ui-note__text"><span class="ui-note__title">Picked up at La Trinidad<time>1h</time></span><span class="ui-note__body">5 t of vegetables, on the way to Navotas</span></span></li>
+                    <li class="ui-note"><span class="ui-avatar ui-note__av" data-tone="3">6W</span><span class="ui-note__text"><span class="ui-note__title">Picked up at La Trinidad<time>1h</time></span><span class="ui-note__body">5 t of vegetables, on the way to Navotas</span></span></li>
                   </ul>
                 </div>
               </div></div>
@@ -421,12 +442,12 @@ export function renderLanding(data: LandingData): string {
             <div class="panel">
               <div class="stage stage--fade-b"><div class="at-rise fit" style="--fit-max:340px;--ax:max(24px, 50% - 170px);--ay:40px;--ay-sm:24px">
                 <div class="ui ui-panel ui-checks" data-ui="checklist">
-                  <div class="ui-checks__head"><div class="ui-title">NDA 1290 · 6-wheeler</div><span class="ui-spacer"></span><div class="ui-meta" data-checks-count>3 of 4</div></div>
+                  <div class="ui-checks__head"><div class="ui-title">6-wheeler, 6 t</div><span class="ui-spacer"></span><div class="ui-meta" data-checks-count>3 of 4</div></div>
                   <div class="ui-checks__bar"><i data-checks-bar style="--k:0.75"></i></div>
                   <ul class="ui-checks__list">
                     <li class="ui-check is-done"><span class="ui-check__box">${tick}</span><span class="ui-check__label">Government ID</span></li>
                     <li class="ui-check is-done"><span class="ui-check__box">${tick}</span><span class="ui-check__label">Driver’s license</span></li>
-                    <li class="ui-check is-done"><span class="ui-check__box">${tick}</span><span class="ui-check__label">OR/CR for NDA 1290</span></li>
+                    <li class="ui-check is-done"><span class="ui-check__box">${tick}</span><span class="ui-check__label">OR/CR for the truck</span></li>
                     <li class="ui-check"><span class="ui-check__box">${tick}</span><span class="ui-check__label">LTFRB franchise (CPC)</span></li>
                   </ul>
                 </div>
@@ -456,7 +477,7 @@ export function renderLanding(data: LandingData): string {
           <article class="card card--row card--open span-6 m-nolift">
             <h3>Records proof of delivery</h3>
             <p>At drop-off the driver adds a photo of the signed DR or waybill and the receiver’s name. The phone camera opens directly.</p>
-            <div class="panel panel--screen"><img class="frame__img" src="/assets/screens/booking-proof.jpg" alt="A delivered booking: requested, confirmed, picked up and delivered, received by Jun Reyes with DR #2231" loading="lazy" width="770" height="368" data-source="client" data-subject="the booking page's proof of delivery"></div>
+            <div class="panel panel--screen"><img class="frame__img" src="/assets/screens/booking-proof.jpg" alt="A delivered booking: requested, confirmed, picked up and delivered, with the receiver and DR number recorded" loading="lazy" width="770" height="368" data-source="client" data-subject="the booking page's proof of delivery"></div>
           </article>
         </div>
         <div class="grid bk-counts" data-moment="counter-rolls">

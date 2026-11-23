@@ -2,17 +2,9 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { TRUCK_TYPES, type TruckType } from "@/lib/constants";
-import { renderLanding } from "@/lib/landing";
+import { renderLanding, TRUCK_BADGE } from "@/lib/landing";
 
 export const dynamic = "force-dynamic";
-
-const initials = (s: string) =>
-  s
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0]!.toUpperCase())
-    .join("");
 
 /** The public landing page. Signed-in users go straight to their dashboard. */
 export async function GET() {
@@ -21,7 +13,7 @@ export async function GET() {
   const [openTrips, openLoads, delivered] = await Promise.all([
     db.returnTrip.findMany({
       where: { status: "OPEN" },
-      include: { truck: true, trucker: true },
+      include: { truck: true },
       orderBy: { availableFrom: "asc" },
       take: 6,
     }),
@@ -30,17 +22,14 @@ export async function GET() {
   ]);
 
   const html = renderLanding({
-    trips: openTrips.map((t) => {
-      const company = t.trucker.company || t.trucker.name;
-      return {
-        company,
-        initials: initials(company),
-        origin: t.originCity,
-        dest: t.destCity,
-        truckLabel: TRUCK_TYPES[t.truck.truckType as TruckType]?.label ?? t.truck.truckType,
-        from: t.availableFrom,
-      };
-    }),
+    // The page is public: no company names, people or plates, only the truck class and the route.
+    trips: openTrips.map((t) => ({
+      badge: TRUCK_BADGE[t.truck.truckType] ?? "TR",
+      origin: t.originCity,
+      dest: t.destCity,
+      truckLabel: TRUCK_TYPES[t.truck.truckType as TruckType]?.label ?? t.truck.truckType,
+      from: t.availableFrom,
+    })),
     openLoads,
     delivered: delivered._count,
     loadedKm: delivered._sum.loadedKm ?? 0,
