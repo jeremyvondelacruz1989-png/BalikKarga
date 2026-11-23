@@ -10,7 +10,7 @@ import {
   TOPUP_PACKAGES,
 } from "@/lib/constants";
 import { ActionForm, SubmitButton } from "@/components/ActionForm";
-import { PageHeader, StatusBadge } from "@/components/ui";
+import { Icon, PageHeader, StatusBadge } from "@/components/ui";
 import { requestTopup } from "../actions";
 import { missingBonusDocs } from "@/lib/bonus";
 import Link from "next/link";
@@ -45,7 +45,7 @@ export default async function CreditsPage() {
         {heldBonus && (
           <div className="card border-brand-100 bg-brand-50 p-5 text-sm">
             <div className="font-semibold text-brand-700">
-              🎁 ₱{heldBonus.amount.toLocaleString()} welcome bonus waiting for you
+              <Icon name="gift" /> ₱{heldBonus.amount.toLocaleString()} welcome bonus waiting for you
             </div>
             <p className="mt-1 text-slate-700">It&apos;s credited as soon as these documents are approved:</p>
             <ul className="mt-1 list-inside list-disc text-slate-700">
