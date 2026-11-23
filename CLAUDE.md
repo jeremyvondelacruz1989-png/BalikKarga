@@ -11,6 +11,12 @@ Prisma (SQLite locally), Tailwind 4. See README.md for features and setup.
   without a matching ledger row in the same transaction.
 - `prisma/seed.ts`: demo data. The e2e tests depend on it, so update `e2e/` when changing it.
 
+## Brand (Road Line)
+Asphalt `#14161A`, lane yellow `#FFC400`, concrete `#F4F4F1`; Archivo headings, Inter text; tokens in
+`src/app/globals.css`, logo in `src/components/Logo.tsx`. Text on yellow is asphalt; never yellow text on white
+(use `text-brand-700`). The landing page (`src/lib/landing.ts`) sets the same colours in its own `:root` block.
+Screens on the landing page (`public/assets/screens/`) never show real names, phone numbers or plates.
+
 ## Before finishing any change
 Run `npm run test:all` (typecheck, unit tests, browser tests) and make sure everything passes.
 On a fresh machine run `npm run test:e2e:setup` once first. If you change a user flow on purpose,

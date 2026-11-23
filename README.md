@@ -61,6 +61,13 @@ Shippers pay a discounted backhaul rate, and truckers earn on kilometers they wo
 ### Also included
 - **Notifications inbox.** All events go through `src/lib/notify.ts`, which sends the SMS too.
 
+### Brand: Road Line
+- **Colours:** asphalt `#14161A`, lane yellow `#FFC400` and concrete `#F4F4F1`, plus go green `#138A4E` and signal blue `#2F6BFF` for statuses.
+- **Fonts:** Archivo for headings and Inter for text, both self-hosted from npm, so builds never download fonts.
+- **Logo:** a yellow U-turn lane on asphalt (`src/components/Logo.tsx`, with the same paths in `src/app/icon.svg` and `public/favicon.svg`).
+- **Theme tokens:** in `src/app/globals.css`, shared by every page. The landing page (`src/lib/landing.ts`) sets the same colours in its own `:root` block.
+- **Rule:** text on yellow is always asphalt. Yellow is never used as text on white; use `brand-700` (dark amber) instead.
+
 ### How matching works (`src/lib/matching.ts`)
 A load fits a return trip when **all** of these hold:
 - the detour is within the trucker's limit
