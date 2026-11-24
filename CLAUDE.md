@@ -1,7 +1,7 @@
 # BalikKarga
 
 Backhaul marketplace for PH shippers and truckers. Next.js 15 (App Router, server actions),
-Prisma (SQLite locally), Tailwind 4. See README.md for features and setup.
+Prisma + PostgreSQL (Supabase live, local Postgres in dev), Tailwind 4. Hosting: Vercel (sin1). See README.md for features and setup.
 
 ## Where things live
 - `src/app/actions.ts`: every server action (auth, listings, bookings, credits, uploads, lanes, admin).
@@ -9,7 +9,10 @@ Prisma (SQLite locally), Tailwind 4. See README.md for features and setup.
 - `src/lib/constants.ts`: fees (2.5%, min ₱75), welcome bonus, truck and cargo types, payment accounts.
 - `src/lib/bonus.ts`, `credits` ledger in `CreditTransaction`: never change `User.creditBalance`
   without a matching ledger row in the same transaction.
-- `prisma/seed.ts`: demo data. The e2e tests depend on it, so update `e2e/` when changing it.
+- Database changes: edit `prisma/schema.prisma`, run `npm run db:migrate -- --name <change>`, commit the migration.
+  Never use `db push` or `migrate reset` against Supabase. Live migrations run in `npm run vercel-build`.
+- `src/lib/storage.ts`: uploads go to the private Supabase bucket when `SUPABASE_URL`/`SUPABASE_SECRET_KEY` are set, else disk.
+- `prisma/seed.ts`: demo data (refuses to run on a non-local database). The e2e tests depend on it, so update `e2e/` when changing it.
 
 ## Brand (Road Line)
 Asphalt `#14161A`, lane yellow `#FFC400`, concrete `#F4F4F1`; Archivo headings, Inter text; tokens in

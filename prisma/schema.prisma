@@ -1,16 +1,17 @@
-// BalikKarga data model.
-// Local dev runs on SQLite. To go live, change provider to "postgresql" and set
-// DATABASE_URL to your Supabase/Neon connection string, then `npm run db:push`.
-// Enum-like columns are plain strings (validated in src/lib/constants.ts) so the
-// schema works unchanged on both SQLite and Postgres.
+// BalikKarga data model (PostgreSQL).
+// Locally: a Postgres in the Codespace (see .devcontainer) or on your machine.
+// Live: Supabase. DATABASE_URL is the pooled connection the app uses; DIRECT_URL is the
+// direct connection Prisma uses to run migrations (`npm run db:deploy`).
+// Enum-like columns are plain strings, validated in src/lib/constants.ts.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {

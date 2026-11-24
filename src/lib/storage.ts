@@ -2,10 +2,14 @@ import "server-only";
 import { randomBytes } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { db } from "./db";
 
-// Local-disk storage driver. To move to Supabase Storage or S3, reimplement
-// putBytes/getBytes; everything else (metadata, access checks) stays the same.
+// Two storage drivers behind putBytes/getBytes; metadata and access checks live elsewhere.
+// - Supabase Storage (live): set SUPABASE_URL and SUPABASE_SECRET_KEY. Files go to the private
+//   bucket SUPABASE_BUCKET (default "uploads"); only the server can read or write them, and
+//   /files/[id] streams them to the people allowed to see each file.
+// - Local disk (Codespace, tests): used when those are not set. Files go to UPLOAD_DIR.
 
 const ROOT = path.resolve(process.env.UPLOAD_DIR || "./uploads");
 export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
@@ -17,13 +21,40 @@ const SIGNATURES: { mime: string; ext: string; test: (b: Buffer) => boolean }[] 
   { mime: "application/pdf", ext: "pdf", test: (b) => b.subarray(0, 5).toString() === "%PDF-" },
 ];
 
-async function putBytes(key: string, bytes: Buffer) {
+const KEY_PATTERN = /^[a-zA-Z0-9_-]+\.[a-z]+$/;
+
+let supabase: SupabaseClient | null | undefined;
+function supabaseStorage() {
+  if (supabase === undefined) {
+    const url = process.env.SUPABASE_URL;
+    const key = process.env.SUPABASE_SECRET_KEY;
+    supabase = url && key ? createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } }) : null;
+  }
+  return supabase ? supabase.storage.from(process.env.SUPABASE_BUCKET || "uploads") : null;
+}
+
+/** Which driver is active, for logs and the admin page. */
+export const storageDriver = () => (supabaseStorage() ? "supabase" : "disk");
+
+async function putBytes(key: string, bytes: Buffer, contentType: string) {
+  const bucket = supabaseStorage();
+  if (bucket) {
+    const { error } = await bucket.upload(key, bytes, { contentType, upsert: false });
+    if (error) throw new Error(`Supabase Storage upload failed: ${error.message}`);
+    return;
+  }
   await mkdir(ROOT, { recursive: true });
   await writeFile(path.join(ROOT, key), bytes);
 }
 
 export async function getBytes(key: string): Promise<Buffer> {
-  if (!/^[a-zA-Z0-9_-]+\.[a-z]+$/.test(key)) throw new Error("Bad key");
+  if (!KEY_PATTERN.test(key)) throw new Error("Bad key");
+  const bucket = supabaseStorage();
+  if (bucket) {
+    const { data, error } = await bucket.download(key);
+    if (error || !data) throw new Error(`Supabase Storage download failed: ${error?.message ?? "no data"}`);
+    return Buffer.from(await data.arrayBuffer());
+  }
   return readFile(path.join(ROOT, key));
 }
 
@@ -42,7 +73,7 @@ export async function saveUpload(
   if (!kind) throw new UploadError("Upload a JPG, PNG, WebP or PDF file");
   if (opts.imagesOnly && !kind.mime.startsWith("image/")) throw new UploadError("Upload a photo (JPG, PNG or WebP)");
   const storageKey = `${randomBytes(16).toString("hex")}.${kind.ext}`;
-  await putBytes(storageKey, bytes);
+  await putBytes(storageKey, bytes, kind.mime);
   return db.storedFile.create({
     data: {
       ownerId,

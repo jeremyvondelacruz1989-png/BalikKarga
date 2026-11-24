@@ -19,6 +19,15 @@ function day(n: number, hour = 8) {
 }
 
 async function main() {
+  // The seed wipes every table before loading demo data. Never let it touch a live database.
+  const url = process.env.DATABASE_URL ?? "";
+  const local = /@(localhost|127\.0\.0\.1|db)(:|\/)/.test(url);
+  if (!local && process.env.ALLOW_DEMO_SEED !== "yes") {
+    console.error("Refusing to seed: DATABASE_URL is not a local database. This would delete all live data.");
+    console.error("Only for a throwaway database, set ALLOW_DEMO_SEED=yes.");
+    process.exit(1);
+  }
+
   await db.smsLog.deleteMany();
   await db.savedLane.deleteMany();
   await db.bookingPhoto.deleteMany();

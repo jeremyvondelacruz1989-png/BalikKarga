@@ -63,6 +63,18 @@ export async function signup(_: FormState, formData: FormData): Promise<FormStat
   if (await db.user.findUnique({ where: { email: data.email } })) return { error: "That email is already registered" };
   const passwordHash = await hashPassword(password);
 
+  // First admin of a new deployment: an email listed in ADMIN_EMAILS becomes the admin,
+  // but only while the site has no admin at all, so the list can't be used to add more later.
+  const adminEmails = (process.env.ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  if (adminEmails.includes(data.email) && (await db.user.count({ where: { role: "ADMIN" } })) === 0) {
+    const admin = await db.user.create({ data: { ...data, role: "ADMIN", verified: true, passwordHash } });
+    await createSession(admin.id);
+    redirect("/admin");
+  }
+
   // Welcome bonus for truckers: reserved now (once per mobile number) and credited
   // when their verification documents are approved (see src/lib/bonus.ts).
   const bonusTaken =
