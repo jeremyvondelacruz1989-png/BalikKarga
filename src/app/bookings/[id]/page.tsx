@@ -8,7 +8,7 @@ import { availableActions } from "@/lib/booking-rules";
 import { marketRate } from "@/lib/matching";
 import { needsRoro } from "@/lib/geo";
 import { ActionForm, SubmitButton } from "@/components/ActionForm";
-import { Pill, Route, StatusBadge, VerifiedBadge } from "@/components/ui";
+import { Icon, Pill, Route, StatusBadge, VerifiedBadge } from "@/components/ui";
 import { rateBooking, updateBooking } from "../../actions";
 
 const STEPS = ["PENDING", "ACCEPTED", "IN_TRANSIT", "DELIVERED"];
@@ -112,7 +112,7 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
         </dl>
         {!showContacts && isParty && (
           <p className="mt-4 rounded border border-dashed border-slate-300 p-3 text-xs text-slate-600">
-            🔒 Phone numbers are revealed once the booking is accepted and the trucker&apos;s ₱{fee.toLocaleString()} booking fee is
+            <Icon name="lock" /> Phone numbers are revealed once the booking is accepted and the trucker&apos;s ₱{fee.toLocaleString()} booking fee is
             paid from credits.
             {isTrucker && b.status === "PENDING" && (
               <>

@@ -38,6 +38,8 @@ const esc = (s: string) =>
 const num = (n: number) => Math.round(n).toLocaleString("en-PH");
 const addDays = (d: Date, n: number) => new Date(d.getTime() + n * 86_400_000);
 const arrow = `<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"/><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"/></svg>`;
+/** The Road Line mark: a yellow U-turn lane on asphalt (same paths as src/components/Logo.tsx). */
+const LOGO_MARK = `<svg class="bk-logo__mark" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="12" fill="#2A2D33"/><path d="M22 50 V28 a10 10 0 0 1 20 0 V42" stroke="#FFC400" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M35 37 L42 45 L49 37" stroke="#FFC400" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M32 14 V18" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/></svg>`;
 const tick = `<svg viewBox="0 0 16 16"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg>`;
 
 /** Short truck-class badge for the trip rows (in place of a company's initials). */
@@ -105,13 +107,13 @@ export function renderLanding(data: LandingData): string {
 <meta property="og:image" content="/share.jpg">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<meta name="theme-color" content="#f7f6f3">
+<meta name="theme-color" content="#14161a">
 <!-- <link rel="canonical" href="https://[the client's domain]/"> : add once the production domain is set -->
 <meta name="site-kind" content="software">
 <meta name="page-type" content="software">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wdth,wght@75..100,400..700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/system.css">
 <link rel="stylesheet" href="/assets/ui/cards.css">
 <link rel="stylesheet" href="/assets/motion/motion.css">
@@ -120,17 +122,18 @@ export function renderLanding(data: LandingData): string {
 <link rel="stylesheet" href="/assets/icons/icon.css">
 <style>
 :root {
-  --p-bg: #f7f6f3; --p-surface: #eaeae8; --p-ink: #16202c; --p-muted: #5c636c;
-  --p-accent: #d9540c; --p-accent-ink: #111111; --p-action: #d9540c; --p-action-ink: #111111;
-  --p-inv-bg: #16202c; --p-inv-surface: #232c38; --p-inv-ink: #f7f6f3; --p-inv-muted: #999da1;
-  --p-inv-accent: #d9540c; --p-inv-accent-ink: #111111; --p-inv-action: #d9540c; --p-inv-action-ink: #111111;
-  --font-display: "Instrument Sans", system-ui, sans-serif;
-  --font-text: "Instrument Sans", system-ui, sans-serif;
+  /* BalikKarga brand: Road Line (asphalt, lane yellow, concrete; Archivo + Inter), same as the app */
+  --p-bg: #f4f4f1; --p-surface: #e9e9e4; --p-ink: #14161a; --p-muted: #5c5f66;
+  --p-accent: #ffc400; --p-accent-ink: #14161a; --p-action: #ffc400; --p-action-ink: #14161a;
+  --p-inv-bg: #14161a; --p-inv-surface: #24272d; --p-inv-ink: #f4f4f1; --p-inv-muted: #a3a6ad;
+  --p-inv-accent: #ffc400; --p-inv-accent-ink: #14161a; --p-inv-action: #ffc400; --p-inv-action-ink: #14161a;
+  --font-display: "Archivo", system-ui, sans-serif;
+  --font-text: "Inter", system-ui, sans-serif;
   --font-mono: "DM Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-  --display-weight: 500;
-  --display-tracking: -0.028em;
-  --display-tracking-xl: -0.036em;
-  --display-stretch: 96%;
+  --display-weight: 800;
+  --display-tracking: -0.025em;
+  --display-tracking-xl: -0.03em;
+  --display-stretch: 100%;
   --ly-scale: 1.04;
 }
 </style>
@@ -148,6 +151,21 @@ export function renderLanding(data: LandingData): string {
 <link rel="modulepreload" href="/assets/moments/counter-rolls/moment.js">
 <style>
 /* page CSS: only what sits inside a visual, plus one --p-h per card group (references/system.md) */
+.bk-logo { display: inline-flex; align-items: center; gap: 10px; font: 800 19px/1 var(--font-display); letter-spacing: -0.02em; }
+.bk-logo__mark { width: 30px; height: 30px; flex: none; }
+/* Road Line: the hero's moving ground in asphalt with lane-yellow light, and three-letter truck badges that fit */
+.hero__art { --fx-bg: #14161a; --fx-surface: #24272d; --fx-ink: #f4f4f1; --fx-muted: #a3a6ad; --fx-accent: #ffc400; --fx-accent-ink: #14161a; }
+/* product UI fragments: the brand palette everywhere (their own default accent is orange), light windows inside the dark hero */
+:root { --fx-accent: #ffc400; --fx-accent-ink: #14161a; }
+.hero__art .ui { --u-bg: #ffffff; --u-surface: #f4f4f1; --u-ink: #14161a; --u-muted: #5c5f66; --u-accent: #ffc400; --u-accent-ink: #14161a; }
+.ui-win__row .ui-avatar { font-size: 9px; letter-spacing: -0.04em; }
+/* the kit's lit ground (default sand) becomes the brand's lane yellow: the pricing panel and the close band */
+html[data-ground] { --ground-bg: #ffc400; --ground-surface: #ffd54d; --ground-ink: #14161a; --ground-muted: #4a3d00; --ground-accent: #14161a; }
+/* Archivo runs wider than the kit's specimen face: the footer wordmark is set a little smaller and narrower */
+.close__word { font-size: clamp(56px, 12.4vw, 184px); font-stretch: 88%; }
+/* on the yellow band the main action is solid asphalt with yellow type, the inverse of the header's button */
+.closing .btn.btn--primary { background: #14161a; color: #ffc400; border-color: #14161a; padding-inline: 24px; }
+.closing .btn.btn--primary:hover { background: #24272d; }
 
 /* nav cards: the client's own app screens */
 .menu-card .panel { --p-h: 200px; }
@@ -256,10 +274,10 @@ export function renderLanding(data: LandingData): string {
      moments: counter-rolls (the last row of #features); marquee-row was dealt too and left out (see the report)
      screens: hero 1 · matching 1 · features 2 · pricing 1 · faq 1 · lanes 1 · close 1 -->
 
-<header class="nav">
+<header class="nav nav--tone">
   <div class="wrap nav__bar">
     <a class="skip-link" href="#top">Skip to content</a>
-    <a class="nav__logo" href="#top">BalikKarga</a>
+    <a class="nav__logo bk-logo" href="#top" aria-label="BalikKarga home">${LOGO_MARK}<span>BALIKKARGA</span></a>
     <nav class="nav__links" aria-label="Main">
       <div class="nav__item">
         <a class="nav__link" href="#matching">Matching <svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
@@ -584,12 +602,12 @@ export function renderLanding(data: LandingData): string {
     <div class="closing__links">
       <div class="grid">
         <div class="span-4 stack-4">
-          <a class="nav__logo" href="#top">BalikKarga</a>
+          <a class="nav__logo bk-logo" href="#top" aria-label="BalikKarga home">${LOGO_MARK}<span>BALIKKARGA</span></a>
           <p class="footer__lede">Backhaul loads for Philippine trucks.</p>
         </div>
         <div class="span-2 footer__col"><h3>Product</h3><ul><li><a href="#matching">Load matching</a></li><li><a href="#features">Features</a></li></ul></div>
         <div class="span-2 footer__col"><h3>Pricing</h3><ul><li><a href="#pricing">Booking fee</a></li><li><a href="#faq">Questions</a></li></ul></div>
-        <div class="span-2 footer__col"><h3>Lanes</h3><ul><li><a href="#lanes">68 hubs</a></li><li><a href="#lanes">RoRo crossings</a></li></ul></div>
+        <div class="span-2 footer__col"><h3>Lanes</h3><ul><li><a href="#lanes">${CITIES.length} hubs</a></li><li><a href="#lanes">RoRo crossings</a></li></ul></div>
         <div class="span-2 footer__col"><h3>Account</h3><ul><li><a href="/login">Log in</a></li><li><a href="mailto:hello@balikkarga.example">Email the team</a></li></ul></div>
       </div>
       <div class="footer__legal">

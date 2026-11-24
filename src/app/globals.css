@@ -1,18 +1,47 @@
 @import "tailwindcss";
 
+/*
+  BalikKarga brand: Road Line.
+  Asphalt black, road-marking yellow, concrete grey. Archivo for headings, Inter for text.
+  Yellow is a fill for actions and highlights; text on yellow is always asphalt (12:1).
+  Yellow is never used as text on white (too faint): links and accents on white use --color-brand-700.
+*/
 @theme {
-  --color-brand-50: #fff4ed;
-  --color-brand-100: #ffe6d4;
-  --color-brand-500: #f06a1d;
-  --color-brand-600: #d9540c;
-  --color-brand-700: #b4410b;
-  --color-ink: #16202c;
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --color-asphalt: #14161a;
+  --color-asphalt-2: #24272d;
+  --color-asphalt-3: #3a3e46;
+  --color-lane: #ffc400;
+  --color-lane-hover: #f0b400;
+  --color-concrete: #f4f4f1;
+  --color-line: #e3e3de;
+  --color-go: #138a4e;
+  --color-signal: #2f6bff;
+
+  /* "brand" keeps older class names working: tints of lane yellow, and a dark amber for text on white. */
+  --color-brand-50: #fff8db;
+  --color-brand-100: #ffeca3;
+  --color-brand-500: #ffc400;
+  --color-brand-600: #ffc400;
+  --color-brand-700: #6b5200;
+  --color-ink: #14161a;
+
+  --font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Archivo Variable", "Archivo", ui-sans-serif, system-ui, sans-serif;
 }
 
 @layer base {
   body {
-    @apply bg-slate-50 text-ink antialiased;
+    @apply bg-concrete text-ink antialiased;
+  }
+  h1,
+  h2 {
+    @apply font-display tracking-[-0.02em];
+  }
+  h1 {
+    @apply font-extrabold;
+  }
+  h2 {
+    @apply font-bold;
   }
   label {
     @apply text-sm font-medium text-slate-700;
@@ -20,22 +49,33 @@
   input,
   select,
   textarea {
-    @apply mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100;
+    @apply mt-1 block w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm outline-none transition focus:border-asphalt focus:ring-2 focus:ring-lane;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-asphalt;
   }
 }
 
 @utility btn {
-  @apply inline-flex items-center justify-center gap-1.5 rounded-md px-3.5 py-2 text-sm font-semibold transition disabled:opacity-50;
+  @apply inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-sm font-bold transition active:translate-y-px disabled:opacity-50;
 }
 @utility btn-primary {
-  @apply btn bg-brand-600 text-white hover:bg-brand-700;
+  @apply btn bg-lane text-asphalt hover:bg-lane-hover;
+}
+@utility btn-dark {
+  @apply btn bg-asphalt text-white hover:bg-asphalt-2;
 }
 @utility btn-secondary {
-  @apply btn border border-slate-300 bg-white text-slate-800 hover:bg-slate-100;
+  @apply btn border border-line bg-white text-ink hover:border-asphalt-3;
 }
 @utility btn-danger {
   @apply btn border border-red-200 bg-white text-red-700 hover:bg-red-50;
 }
 @utility card {
-  @apply rounded-lg border border-slate-200 bg-white shadow-sm;
+  @apply rounded-xl border border-line bg-white;
+}
+/* The dashed centre line under the header: the brand's road marking. */
+@utility lane-line {
+  background: repeating-linear-gradient(90deg, var(--color-lane) 0 22px, transparent 22px 36px) var(--color-asphalt);
+  height: 4px;
 }

@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { fmtDateTime } from "@/lib/format";
 import { DOC_TYPES } from "@/lib/constants";
 import { ActionForm, SubmitButton } from "@/components/ActionForm";
-import { PageHeader, StatusBadge, VerifiedBadge } from "@/components/ui";
+import { Icon, PageHeader, StatusBadge, VerifiedBadge } from "@/components/ui";
 import { uploadDocument } from "../actions";
 import { missingBonusDocs, pendingSignupBonus } from "@/lib/bonus";
 
@@ -42,7 +42,7 @@ export default async function VerificationPage() {
         />
         {heldBonus && (
           <div className="card border-brand-100 bg-brand-50 p-4 text-sm">
-            <b className="text-brand-700">🎁 Unlock your ₱{heldBonus.amount.toLocaleString()} welcome bonus.</b> Still needed (approved):{" "}
+            <b className="text-brand-700"><Icon name="gift" /> Unlock your ₱{heldBonus.amount.toLocaleString()} welcome bonus.</b> Still needed (approved):{" "}
             {missing.join(" · ")}. Business registration (DTI/SEC or BIR 2303) is optional for the bonus.
           </div>
         )}
