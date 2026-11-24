@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { loginAs, openBooking, resetDb } from "./helpers";
+import { loginAs, openBooking, resetDb, signUp } from "./helpers";
 
 // People must only see their own records, and pages are limited by role.
 test.describe.serial("access control", () => {
@@ -32,6 +32,14 @@ test.describe.serial("access control", () => {
       await other.goto(url);
       await expect(other.getByRole("heading", { name: "Not found" })).toBeVisible();
     }
+  });
+
+  test("an ADMIN_EMAILS address does not become admin once an admin exists", async ({ browser }) => {
+    // The demo data already has an admin, so signing up with a listed email gives a normal account.
+    const page = await signUp(browser, { role: "SHIPPER", email: "owner@example.com", phone: "09175550999" });
+    await expect(page).toHaveURL(/\/dashboard/);
+    await page.goto("/admin");
+    await expect(page).toHaveURL(/\/dashboard/);
   });
 
   test("wrong password is rejected", async ({ page }) => {

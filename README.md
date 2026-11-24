@@ -89,17 +89,21 @@ The app then opens in a new tab. If it doesn't, open the **Ports** tab and click
 
 ## Run it locally
 
-Requires Node 20+.
+The easiest way is a **Codespace**: it starts the app and its own PostgreSQL automatically.
+
+On your own machine you need Node 20+ and PostgreSQL 16 (a database called `balikkarga`, and `balikkarga_e2e` for the browser tests):
 
 ```bash
-cp .env.example .env
+cp .env.example .env    # points at postgres:postgres@localhost:5432
 npm install
-npm run db:reset   # creates the SQLite DB and loads demo data
-npm run dev        # http://localhost:3000
+npm run db:reset        # applies the migrations and loads demo data (local databases only)
+npm run dev             # http://localhost:3000
 ```
 
 Demo logins (password `demo1234`): `shipper@demo.ph`, `trucker@demo.ph`, `admin@demo.ph`.
 Other seeded accounts: `cebu.hardware@demo.ph`, `davao.coop@demo.ph`, `ricemill@demo.ph`, `bisaya@demo.ph`, `coldx@demo.ph`, `ilocos@demo.ph`.
+
+**Changing the database:** edit `prisma/schema.prisma`, then run `npm run db:migrate -- --name what-changed`. That writes a migration file under `prisma/migrations/`; commit it. The live database applies it on the next Vercel deploy.
 
 ## Tests
 
@@ -131,16 +135,14 @@ The browser tests (`e2e/`) build the app and run it on port 3100 with **their ow
 | `SIGNUP_BONUS` | Welcome credits for new truckers (default 300; 0 = off) |
 | `NEXT_PUBLIC_PAY_GCASH`, `NEXT_PUBLIC_PAY_MAYA`, `NEXT_PUBLIC_PAY_BANK` | The accounts truckers pay into for top-ups, shown on the Credits page |
 
-## Deploy (Vercel + Supabase), about 15 minutes
+## Going live (Vercel + Supabase)
 
-1. Create a free project at **supabase.com** and copy the *Session pooler* connection string (Project Settings → Database).
-2. In `prisma/schema.prisma`, change `provider = "sqlite"` to `provider = "postgresql"` and commit.
-3. Locally, set `DATABASE_URL` to the Supabase string and run `npx prisma db push`. Optionally run `npm run db:seed` for demo data.
-4. At **vercel.com**, import this GitHub repo and add the `DATABASE_URL` environment variable. Deploy.
-5. Before real users: remove the demo accounts (or don't seed), and change the admin password.
-
-> **Uploads on Vercel.** Vercel's disk isn't permanent, so uploaded documents and photos would disappear. Before going live there, switch `src/lib/storage.ts` to Supabase Storage or S3. Only `putBytes` and `getBytes` need to change.
-> This isn't needed on a regular server or VPS, where local disk works.
+The step-by-step checklist is in **[GO-LIVE.md](GO-LIVE.md)**. In short:
+- **Database:** Supabase Postgres in Singapore. Migrations run automatically on every Vercel build (`npm run vercel-build`).
+- **Uploads:** documents, receipts and delivery photos go to a **private** Supabase Storage bucket, `uploads`. People only ever get them through `/files/[id]`, which checks who is asking.
+- **Hosting:** Vercel, with functions in Singapore (`vercel.json`).
+- **Demo data:** the live site starts empty. `npm run db:seed` refuses to run against anything but a local database.
+- **First admin:** set `ADMIN_EMAILS` to your email; the first sign-up with it becomes the admin.
 
 ## Tech
 - Next.js 15 (App Router, server actions)
